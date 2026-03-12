@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>NP ac · Remote</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+
+:root{
+  --bg:#060608;
+  --p1:#0a0a10;
+  --p2:#111120;
+  --p3:#1a1a2e;
+  --ice:#a8edea;
+  --glow:#00d4ff;
+  --warm:#ff7f3f;
+  --green:#39ff14;
+  --red:#ff3366;
+  --purple:#9d4edd;
+  --gold:#ffd700;
+  --border:rgba(168,237,234,0.1);
+  --text:#e8f4f8;
+  --muted:#4a6572;
+  --on-glow:0 0 20px rgba(57,255,20,.4);
+  --blue-glow:0 0 30px rgba(0,212,255,.3);
+}
+
+html,body{height:100%;overflow-x:hidden}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Rajdhani',sans-serif;
+  font-size:16px;
+  line-height:1.4;
+}
+
+/* Animated background */
+.bg-anim{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(0,100,180,.25) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 100% 100%, rgba(100,0,180,.15) 0%, transparent 70%);
+}
+.scanline{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg, transparent, transparent 2px, rgba(0,212,255,.015) 2px, rgba(0,212,255,.015) 4px
+  );
+}
+
+/* ── Layout ── */
+.app{
+  position:relative;z-index:1;
+  max-width:480px;margin:0 auto;
+  padding:16px 14px 80px;
+}
+
+/* ── Header ── */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 0 20px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:18px;
+}
+.logo{
+  font-family:'Orbitron',monospace;
+  font-weight:900;font-size:22px;
+  letter-spacing:3px;
+  background:linear-gradient(135deg,var(--ice),var(--glow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  text-shadow:none;
+}
+.logo span{color:var(--warm);-webkit-text-fill-color:var(--warm);}
+.sub{font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:1px;text-transform:uppercase;}
+
+.bt-btn{
+  display:flex;align-items:center;gap:8px;
+  background:var(--p2);border:1px solid var(--border);
+  border-radius:30px;padding:8px 18px;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;
+  letter-spacing:1px;color:var(--muted);transition:.25s;
+  text-transform:uppercase;
+}
+.bt-btn:hover{border-color:var(--glow);color:var(--glow);}
+.bt-btn.connected{border-color:var(--green);color:var(--green);box-shadow:0 0 12px rgba(57,255,20,.2);}
+.bt-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);transition:.3s;}
+.bt-dot.on{background:var(--green);box-shadow:var(--on-glow);animation:pulse 2s infinite;}
+.bt-dot.err{background:var(--red);}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.7}}
+
+/* ── Status bar ── */
+.statusbar{
+  background:var(--p1);border:1px solid var(--border);
+  border-radius:12px;padding:10px 16px;
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:16px;font-size:12px;color:var(--muted);
+  letter-spacing:.5px;
+}
+.statusbar .lbl{color:var(--glow);font-size:10px;text-transform:uppercase;letter-spacing:2px;flex-shrink:0;}
+
+/* ── Cards ── */
+.card{
+  background:var(--p1);border:1px solid var(--border);
+  border-radius:18px;padding:20px;margin-bottom:14px;
+  transition:border-color .3s,box-shadow .3s;
+}
+.card:hover{border-color:rgba(168,237,234,.2);}
+.clabel{
+  font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:16px;
+  font-family:'Orbitron',monospace;
+}
+
+/* ── Power card ── */
+.pcard{display:flex;align-items:center;justify-content:space-between;padding:22px;}
+.pcard.on{border-color:rgba(57,255,20,.3);box-shadow:inset 0 0 40px rgba(57,255,20,.04);}
+.pcard.off{border-color:rgba(255,51,102,.2);}
+.p-status{}
+.p-lbl{font-size:11px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px;}
+.p-val{
+  font-family:'Orbitron',monospace;font-size:38px;font-weight:900;
+  color:var(--red);transition:color .3s,text-shadow .3s;
+  letter-spacing:2px;
+}
+.p-val.on{color:var(--green);text-shadow:var(--on-glow);}
+
+.pow-ring{
+  position:relative;width:72px;height:72px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.pow-ring svg.ring{position:absolute;inset:0;width:100%;height:100%;}
+.pow-ring svg.ring circle{
+  stroke:var(--border);stroke-width:2;fill:none;
+  stroke-dasharray:201;stroke-dashoffset:0;
+  transition:stroke .3s,stroke-dashoffset .3s;
+  transform:rotate(-90deg);transform-origin:50% 50%;
+}
+.pow-ring.on svg.ring circle{stroke:var(--green);stroke-dashoffset:50;box-shadow:var(--on-glow);}
+.pow-inner{
+  width:56px;height:56px;border-radius:50%;
+  background:var(--p2);border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  transition:.2s;position:relative;z-index:1;
+}
+.pow-ring:hover .pow-inner{border-color:var(--glow);box-shadow:var(--blue-glow);}
+.pow-ring:active .pow-inner{transform:scale(.92);}
+.pow-inner svg{width:26px;height:26px;stroke:var(--muted);transition:.3s;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.pow-ring.on .pow-inner svg{stroke:var(--green);}
+
+/* ── Temp card ── */
+.tcard-inner{display:flex;align-items:center;gap:0;justify-content:space-between;}
+.t-num{
+  font-family:'Orbitron',monospace;font-size:70px;font-weight:900;
+  line-height:1;letter-spacing:-3px;
+  background:linear-gradient(160deg,#fff 30%,var(--glow));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  min-width:140px;
+}
+.t-unit{font-size:22px;vertical-align:super;font-weight:300;opacity:.6;}
+.t-btns{display:flex;flex-direction:column;gap:8px;}
+.tbtn{
+  width:52px;height:52px;border-radius:14px;
+  border:1px solid var(--border);background:var(--p2);
+  color:var(--text);font-size:24px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:.15s;font-family:'Orbitron',monospace;font-weight:700;
+  user-select:none;
+}
+.tbtn:hover{border-color:var(--glow);color:var(--glow);box-shadow:var(--blue-glow);}
+.tbtn:active{transform:scale(.9);}
+.t-range{margin-top:16px;display:flex;align-items:center;gap:12px;}
+.t-range span{font-size:11px;color:var(--muted);font-family:'Orbitron',monospace;min-width:28px;}
+input[type=range]{
+  flex:1;-webkit-appearance:none;height:3px;
+  background:linear-gradient(to right,var(--glow) var(--pct,50%),rgba(255,255,255,.1) var(--pct,50%));
+  border-radius:2px;outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--glow);cursor:pointer;
+  box-shadow:0 0 12px var(--glow);transition:.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
+
+/* ── Grid chips ── */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.chip-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;}
+.chip{
+  padding:12px 6px;border-radius:12px;
+  border:1px solid var(--border);background:var(--p2);
+  color:var(--muted);font-size:13px;font-weight:600;
+  cursor:pointer;text-align:center;transition:.15s;
+  user-select:none;letter-spacing:.5px;
+}
+.chip:hover{border-color:var(--glow);color:var(--glow);}
+.chip:active{transform:scale(.92);}
+.chip.sel{border-color:var(--glow);background:rgba(0,212,255,.1);color:var(--glow);box-shadow:0 0 10px rgba(0,212,255,.2);}
+.chip.sel-warm{border-color:var(--warm);background:rgba(255,127,63,.1);color:var(--warm);}
+
+/* ── Vane card ── */
+.vane-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px;}
+.vchip{
+  padding:10px 4px;border-radius:10px;
+  border:1px solid var(--border);background:var(--p2);
+  color:var(--muted);font-size:11px;font-weight:600;
+  cursor:pointer;text-align:center;transition:.15s;user-select:none;
+}
+.vchip:hover{border-color:var(--purple);color:var(--purple);}
+.vchip.sel{border-color:var(--purple);background:rgba(157,78,221,.15);color:var(--purple);}
+
+/* ── Voice card ── */
+.voice-card{
+  background:linear-gradient(135deg,rgba(157,78,221,.08),rgba(0,212,255,.05));
+  border:1px solid rgba(157,78,221,.3);
+  border-radius:18px;padding:20px;margin-bottom:14px;
+}
+.voice-inner{display:flex;align-items:center;gap:16px;}
+.mic-btn{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  background:var(--p2);border:2px solid rgba(157,78,221,.4);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.2s;position:relative;overflow:hidden;
+}
+.mic-btn::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(157,78,221,.3),transparent);
+  opacity:0;transition:.2s;
+}
+.mic-btn:hover::before{opacity:1;}
+.mic-btn:hover{border-color:var(--purple);box-shadow:0 0 20px rgba(157,78,221,.4);}
+.mic-btn.listening{
+  border-color:var(--red);
+  box-shadow:0 0 0 0 rgba(255,51,102,.4);
+  animation:sonar 1.2s infinite;
+}
+.mic-btn svg{width:28px;height:28px;fill:var(--muted);transition:.2s;}
+.mic-btn:hover svg,.mic-btn.listening svg{fill:var(--purple);}
+@keyframes sonar{
+  0%{box-shadow:0 0 0 0 rgba(157,78,221,.6)}
+  70%{box-shadow:0 0 0 18px rgba(157,78,221,0)}
+  100%{box-shadow:0 0 0 0 rgba(157,78,221,0)}
+}
+.voice-info{}
+.voice-title{font-weight:700;font-size:15px;letter-spacing:.5px;margin-bottom:4px;}
+.voice-hint{font-size:12px;color:var(--muted);line-height:1.5;}
+.voice-result{
+  margin-top:12px;background:rgba(0,0,0,.3);border-radius:10px;
+  padding:10px 14px;font-size:13px;color:var(--ice);min-height:38px;
+  border:1px solid var(--border);letter-spacing:.3px;
+  display:none;
+}
+.voice-result.show{display:block;}
+
+/* ── Presets ── */
+.presets-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+.preset{
+  padding:14px 8px;border-radius:14px;
+  border:1px solid var(--border);background:var(--p2);
+  cursor:pointer;text-align:center;transition:.2s;
+}
+.preset:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.15);}
+.preset:active{transform:scale(.94);}
+.preset-icon{font-size:22px;margin-bottom:6px;}
+.preset-name{font-size:12px;font-weight:600;letter-spacing:.5px;color:var(--text);}
+.preset-desc{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* ── Automation ── */
+.arow{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 0;border-bottom:1px solid var(--border);
+}
+.arow:first-child{padding-top:0;}
+.arow:last-child{border-bottom:none;padding-bottom:0;}
+.arow-left{}
+.arow-name{font-size:14px;font-weight:600;}
+.arow-sub{font-size:11px;color:var(--muted);margin-top:2px;letter-spacing:.3px;}
+.arow-right{display:flex;align-items:center;gap:10px;}
+.tminput{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;color:var(--text);font-family:'Orbitron',monospace;
+  font-size:11px;width:84px;text-align:center;outline:none;transition:.2s;
+}
+.tminput:focus{border-color:var(--glow);}
+.tog{
+  width:44px;height:24px;border-radius:12px;
+  background:rgba(255,255,255,.1);border:none;cursor:pointer;
+  position:relative;transition:.25s;flex-shrink:0;
+}
+.tog.on{background:linear-gradient(90deg,var(--glow),var(--ice));}
+.tog::after{
+  content:'';position:absolute;
+  width:18px;height:18px;border-radius:50%;
+  background:#fff;top:3px;left:3px;
+  transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.4);
+}
+.tog.on::after{transform:translateX(20px);}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:20px;left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:var(--p2);border:1px solid var(--glow);border-radius:14px;
+  padding:12px 24px;font-size:13px;color:var(--glow);
+  letter-spacing:.5px;z-index:999;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1);
+  white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.6),var(--blue-glow);
+  font-family:'Orbitron',monospace;
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.err{border-color:var(--red);color:var(--red);box-shadow:0 0 20px rgba(255,51,102,.3);}
+.toast.ok{border-color:var(--green);color:var(--green);}
+
+/* ── No BLE warning ── */
+.no-ble{
+  background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.3);
+  border-radius:14px;padding:16px;margin-bottom:16px;
+  font-size:13px;color:var(--red);line-height:1.6;display:none;
+}
+.no-ble.show{display:block;}
+
+@media(max-width:380px){
+  .t-num{font-size:56px;}
+  .two{grid-template-columns:1fr;}
+  .presets-grid{grid-template-columns:repeat(2,1fr);}
+  .vane-grid{grid-template-columns:repeat(4,1fr);}
+}
+</style>
+</head>
+<body>
+<div class="bg-anim"></div>
+<div class="scanline"></div>
+
+<div class="app">
+
+<!-- Header -->
+<div class="hdr">
+  <div>
+    <div class="logo">NP<span>·</span>AC</div>
+    <div class="sub">MSY-GN22VF · Bluetooth</div>
+  </div>
+  <button class="bt-btn" id="btBtn" onclick="connectBLE()">
+    <div class="bt-dot" id="btDot"></div>
+    <span id="btTxt">Connect</span>
+  </button>
+</div>
+
+<!-- No BLE warning -->
+<div class="no-ble" id="noBle">
+  ⚠ Web Bluetooth not supported. Use <strong>Chrome or Edge on Android/desktop</strong>. Safari and Firefox don't support Web Bluetooth.
+</div>
+
+<!-- Status -->
+<div class="statusbar">
+  <span class="lbl">Last</span>
+  <span id="lastAct">—</span>
+</div>
+
+<!-- Power -->
+<div class="card pcard off" id="pcard">
+  <div class="p-status">
+    <div class="p-lbl">Air Conditioner</div>
+    <div class="p-val" id="pval">OFF</div>
+  </div>
+  <div class="pow-ring" id="powRing" onclick="togglePower()">
+    <svg class="ring" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="32"/>
+    </svg>
+    <div class="pow-inner">
+      <svg viewBox="0 0 24 24">
+        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/>
+        <line x1="12" y1="2" x2="12" y2="12"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- Temperature -->
+<div class="card">
+  <div class="clabel">Temperature</div>
+  <div class="tcard-inner">
+    <div class="t-num" id="tval">24<span class="t-unit">°C</span></div>
+    <div class="t-btns">
+      <button class="tbtn" onclick="send('t+')">+</button>
+      <button class="tbtn" onclick="send('t-')">−</button>
+    </div>
+  </div>
+  <div class="t-range">
+    <span>16°</span>
+    <input type="range" id="slider" min="16" max="31" value="24"
+      oninput="slideMove(this.value)"
+      onchange="send('temp:'+this.value)" />
+    <span>31°</span>
+  </div>
+</div>
+
+<!-- Mode + Fan -->
+<div class="two">
+  <div class="card" style="margin-bottom:0">
+    <div class="clabel">Mode</div>
+    <div class="chip-grid">
+      <div class="chip sel"  id="m-cool"    onclick="send('cool')">❄ Cool</div>
+      <div class="chip"      id="m-heat"    onclick="send('heat')">🔥 Heat</div>
+      <div class="chip"      id="m-dry"     onclick="send('dry')">💧 Dry</div>
+      <div class="chip"      id="m-auto"    onclick="send('auto')">⚡ Auto</div>
+      <div class="chip"      id="m-fanonly" onclick="send('fanonly')" style="grid-column:span 2">🌀 Fan Only</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:0">
+    <div class="clabel">Fan Speed</div>
+    <div class="chip-grid">
+      <div class="chip sel"  id="f-auto"   onclick="send('fa')">Auto</div>
+      <div class="chip"      id="f-1"      onclick="send('f1')">Low</div>
+      <div class="chip"      id="f-2"      onclick="send('f2')">Med</div>
+      <div class="chip"      id="f-3"      onclick="send('f3')">High</div>
+      <div class="chip"      id="f-max"    onclick="send('fmax')">Max</div>
+      <div class="chip"      id="f-silent" onclick="send('fs')">🤫 Shh</div>
+    </div>
+  </div>
+</div>
+
+<!-- Vane (airflow direction) -->
+<div class="card">
+  <div class="clabel">Airflow Direction</div>
+  <div class="vane-grid">
+    <div class="vchip sel" id="v-auto"  onclick="send('vane:auto')">Auto</div>
+    <div class="vchip"     id="v-swing" onclick="send('vane:swing')">↕ Swing</div>
+    <div class="vchip"     id="v-1"     onclick="send('vane:1')">▲▲</div>
+    <div class="vchip"     id="v-2"     onclick="send('vane:2')">▲</div>
+    <div class="vchip"     id="v-3"     onclick="send('vane:3')">→</div>
+    <div class="vchip"     id="v-4"     onclick="send('vane:4')">▼</div>
+    <div class="vchip"     id="v-5"     onclick="send('vane:5')">▼▼</div>
+  </div>
+</div>
+
+<!-- Voice Control -->
+<div class="voice-card">
+  <div class="clabel">Voice Control</div>
+  <div class="voice-inner">
+    <button class="mic-btn" id="micBtn" onclick="toggleVoice()">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+    </button>
+    <div class="voice-info">
+      <div class="voice-title">Say a command</div>
+      <div class="voice-hint">
+        "Turn on" · "Set temperature to 22" · "Cool mode"<br>
+        "Fan high" · "Turn off" · "Increase temp"<br>
+        "Sleep mode" · "Set fan to silent" · "Swing"
+      </div>
+    </div>
+  </div>
+  <div class="voice-result" id="voiceResult"></div>
+</div>
+
+<!-- Smart Presets -->
+<div class="card">
+  <div class="clabel">Smart Presets</div>
+  <div class="presets-grid">
+    <div class="preset" onclick="applyPreset('sleep')">
+      <div class="preset-icon">🌙</div>
+      <div class="preset-name">Sleep</div>
+      <div class="preset-desc">26°C · Silent</div>
+    </div>
+    <div class="preset" onclick="applyPreset('turbo')">
+      <div class="preset-icon">⚡</div>
+      <div class="preset-name">Turbo</div>
+      <div class="preset-desc">18°C · Max</div>
+    </div>
+    <div class="preset" onclick="applyPreset('eco')">
+      <div class="preset-icon">🌿</div>
+      <div class="preset-name">Eco</div>
+      <div class="preset-desc">28°C · Low</div>
+    </div>
+    <div class="preset" onclick="applyPreset('comfort')">
+      <div class="preset-icon">😊</div>
+      <div class="preset-name">Comfort</div>
+      <div class="preset-desc">24°C · Auto</div>
+    </div>
+    <div class="preset" onclick="applyPreset('study')">
+      <div class="preset-icon">📚</div>
+      <div class="preset-name">Study</div>
+      <div class="preset-desc">22°C · Med</div>
+    </div>
+    <div class="preset" onclick="applyPreset('dry')">
+      <div class="preset-icon">💧</div>
+      <div class="preset-name">Dehumidify</div>
+      <div class="preset-desc">Dry mode</div>
+    </div>
+  </div>
+</div>
+
+<!-- Automation -->
+<div class="card">
+  <div class="clabel">Automation</div>
+  <div class="arow">
+    <div class="arow-left">
+      <div class="arow-name">Auto Turn OFF</div>
+      <div class="arow-sub">Send OFF at scheduled time</div>
+    </div>
+    <div class="arow-right">
+      <input type="time" class="tminput" id="offTime" value="23:30"/>
+      <button class="tog" id="togOff" onclick="schedToggle('off')"></button>
+    </div>
+  </div>
+  <div class="arow">
+    <div class="arow-left">
+      <div class="arow-name">Auto Turn ON</div>
+      <div class="arow-sub">Send ON at scheduled time</div>
+    </div>
+    <div class="arow-right">
+      <input type="time" class="tminput" id="onTime" value="07:00"/>
+      <button class="tog" id="togOn" onclick="schedToggle('on')"></button>
+    </div>
+  </div>
+  <div class="arow">
+    <div class="arow-left">
+      <div class="arow-name">Sleep Timer</div>
+      <div class="arow-sub">Raise temp +2°C after 30 min</div>
+    </div>
+    <button class="tog" id="togSleep" onclick="schedToggle('sleep')"></button>
+  </div>
+  <div class="arow">
+    <div class="arow-left">
+      <div class="arow-name">Away Mode</div>
+      <div class="arow-sub">Eco settings when you leave</div>
+    </div>
+    <button class="tog" id="togAway" onclick="schedToggle('away')"></button>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  BLE Config
+// ════════════════════════════════════════════════════
+const NUS_SERVICE = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const NUS_RX      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write (app→ESP)
+const NUS_TX      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify (ESP→app)
+
+let bleDevice = null, rxChar = null, txChar = null;
+let connected = false;
+let rxBuf = '';
+
+// AC state mirror
+let st = { power:false, temp:24, mode:'COOL', fan:'AUTO', vane:'AUTO', last:'None' };
+
+// ════════════════════════════════════════════════════
+//  Boot
+// ════════════════════════════════════════════════════
+window.onload = () => {
+  if (!navigator.bluetooth) {
+    document.getElementById('noBle').classList.add('show');
+    document.getElementById('btBtn').style.opacity = '.4';
+    document.getElementById('btBtn').style.pointerEvents = 'none';
+  }
+  updateSlider(24);
+  renderState();
+};
+
+// ════════════════════════════════════════════════════
+//  BLE Connect
+// ════════════════════════════════════════════════════
+async function connectBLE() {
+  if (!navigator.bluetooth) { toast('Web Bluetooth not supported', 'err'); return; }
+  if (connected) { disconnectBLE(); return; }
+
+  try {
+    toast('Scanning for NP ac…');
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ name: 'NP ac' }],
+      optionalServices: [NUS_SERVICE]
+    });
+
+    bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+    const server  = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService(NUS_SERVICE);
+
+    rxChar = await service.getCharacteristic(NUS_RX);
+    txChar = await service.getCharacteristic(NUS_TX);
+
+    await txChar.startNotifications();
+    txChar.addEventListener('characteristicvaluechanged', onNotify);
+
+    connected = true;
+    setConnUI(true);
+    toast('Connected to NP ac!', 'ok');
+
+    // Request initial status
+    await sendRaw('s\n');
+
+  } catch(e) {
+    if (e.name !== 'NotFoundError') toast('Connect failed: ' + e.message, 'err');
+    setConnUI(false);
+  }
+}
+
+function disconnectBLE() {
+  if (bleDevice && bleDevice.gatt.connected) bleDevice.gatt.disconnect();
+}
+
+function onDisconnected() {
+  connected = false; rxChar = null; txChar = null;
+  setConnUI(false);
+  toast('Disconnected from NP ac', 'err');
+}
+
+function onNotify(evt) {
+  const val = new TextDecoder().decode(evt.target.value);
+  rxBuf += val;
+  // Try to parse JSON when we have a complete object
+  const start = rxBuf.indexOf('{');
+  const end   = rxBuf.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    try {
+      const json = rxBuf.substring(start, end+1);
+      const data = JSON.parse(json);
+      rxBuf = '';
+      updateState(data);
+    } catch { /* incomplete, wait for more */ }
+  }
+}
+
+// ════════════════════════════════════════════════════
+//  Send command
+// ════════════════════════════════════════════════════
+async function sendRaw(str) {
+  if (!rxChar) { toast('Not connected — tap Connect', 'err'); return false; }
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str + '\n');
+  // Write in 20-byte chunks (BLE MTU)
+  for (let i = 0; i < data.length; i += 20) {
+    await rxChar.writeValue(data.slice(i, Math.min(i+20, data.length)));
+  }
+  return true;
+}
+
+async function send(cmd) {
+  const ok = await sendRaw(cmd);
+  if (ok) console.log('Sent:', cmd);
+}
+
+// ════════════════════════════════════════════════════
+//  State rendering
+// ════════════════════════════════════════════════════
+function updateState(d) {
+  st = d;
+  renderState();
+}
+
+function renderState() {
+  const on = st.power;
+
+  // Power
+  document.getElementById('pval').textContent = on ? 'ON' : 'OFF';
+  document.getElementById('pval').className = 'p-val' + (on ? ' on' : '');
+  document.getElementById('pcard').className = 'card pcard ' + (on ? 'on' : 'off');
+  document.getElementById('powRing').className = 'pow-ring' + (on ? ' on' : '');
+
+  // Temp
+  document.getElementById('tval').innerHTML = st.temp + '<span class="t-unit">°C</span>';
+  document.getElementById('slider').value = st.temp;
+  updateSlider(st.temp);
+
+  // Mode
+  ['cool','heat','dry','auto','fanonly'].forEach(m => {
+    const el = document.getElementById('m-'+m);
+    if (!el) return;
+    const stMode = st.mode.toLowerCase();
+    const active = (m === 'fanonly' ? stMode === 'fan' : stMode === m);
+    el.className = 'chip' + (active ? (m==='heat' ? ' sel-warm' : ' sel') : '');
+  });
+
+  // Fan
+  const fanMap = { 'AUTO':'auto','MAX':'max','SILENT':'silent','1':'1','2':'2','3':'3' };
+  Object.entries(fanMap).forEach(([k,v]) => {
+    const el = document.getElementById('f-'+v);
+    if (el) el.className = 'chip' + (st.fan === k ? ' sel' : '');
+  });
+
+  // Vane
+  ['auto','swing','1','2','3','4','5'].forEach(v => {
+    const el = document.getElementById('v-'+v);
+    if (el) el.className = 'vchip' + (st.vane.toLowerCase() === v ? ' sel' : '');
+  });
+
+  document.getElementById('lastAct').textContent = st.last || '—';
+}
+
+function setConnUI(ok) {
+  document.getElementById('btDot').className = 'bt-dot ' + (ok ? 'on' : (connected ? '' : 'err'));
+  document.getElementById('btTxt').textContent = ok ? 'Connected' : 'Connect';
+  document.getElementById('btBtn').className = 'bt-btn' + (ok ? ' connected' : '');
+}
+
+function updateSlider(v) {
+  const pct = ((v-16)/(31-16))*100;
+  document.getElementById('slider').style.setProperty('--pct', pct+'%');
+}
+
+function slideMove(v) {
+  document.getElementById('tval').innerHTML = v + '<span class="t-unit">°C</span>';
+  updateSlider(v);
+}
+
+// ════════════════════════════════════════════════════
+//  Controls
+// ════════════════════════════════════════════════════
+function togglePower() { send(st.power ? 'off' : 'on'); }
+
+// ════════════════════════════════════════════════════
+//  Smart Presets
+// ════════════════════════════════════════════════════
+async function applyPreset(p) {
+  const presets = {
+    sleep:   ['on','cool','temp:26','fs','vane:3'],
+    turbo:   ['on','cool','temp:18','fmax','vane:auto'],
+    eco:     ['on','cool','temp:28','f1','vane:auto'],
+    comfort: ['on','cool','temp:24','fa','vane:auto'],
+    study:   ['on','cool','temp:22','f2','vane:3'],
+    dry:     ['on','dry','temp:24','fa','vane:auto'],
+  };
+  const cmds = presets[p];
+  if (!cmds) return;
+  for (const c of cmds) { await send(c); await new Promise(r=>setTimeout(r,150)); }
+  toast('Preset: ' + p.charAt(0).toUpperCase()+p.slice(1) + ' applied!', 'ok');
+}
+
+// ════════════════════════════════════════════════════
+//  Voice Control (Web Speech API)
+// ════════════════════════════════════════════════════
+let recognition = null;
+let listening = false;
+
+function toggleVoice() {
+  if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    toast('Voice not supported in this browser', 'err'); return;
+  }
+  if (listening) { recognition.stop(); return; }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-IN';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 3;
+
+  recognition.onstart = () => {
+    listening = true;
+    document.getElementById('micBtn').classList.add('listening');
+    showVoiceResult('🎤 Listening…');
+  };
+
+  recognition.onend = () => {
+    listening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+  };
+
+  recognition.onerror = (e) => {
+    listening = false;
+    document.getElementById('micBtn').classList.remove('listening');
+    showVoiceResult('Error: ' + e.error);
+  };
+
+  recognition.onresult = (e) => {
+    const said = e.results[0][0].transcript.toLowerCase().trim();
+    showVoiceResult('You said: "' + said + '"');
+    parseVoiceCmd(said);
+  };
+
+  recognition.start();
+}
+
+function parseVoiceCmd(s) {
+  // Turn on/off
+  if (/turn on|switch on|ac on|start ac|power on/.test(s))    { send('on');  toast('Voice: AC ON', 'ok');  return; }
+  if (/turn off|switch off|ac off|stop ac|power off/.test(s)) { send('off'); toast('Voice: AC OFF', 'ok'); return; }
+
+  // Temperature - extract number
+  const tempMatch = s.match(/(\d+)\s*(degree|degrees|celsius|°)?/);
+  if (/set.*temp|temperature.*to|temp.*to|degrees?|make it/.test(s) && tempMatch) {
+    const t = parseInt(tempMatch[1]);
+    if (t >= 16 && t <= 31) { send('temp:'+t); toast('Voice: Temp → '+t+'°C', 'ok'); return; }
+  }
+  if (/increase temp|hotter|warmer|temp up/.test(s))   { send('t+'); toast('Voice: Temp ↑', 'ok'); return; }
+  if (/decrease temp|cooler|colder|temp down/.test(s)) { send('t-'); toast('Voice: Temp ↓', 'ok'); return; }
+
+  // Mode
+  if (/cool mode|set.*cool|cooling/.test(s))      { send('cool');    toast('Voice: Cool Mode', 'ok'); return; }
+  if (/heat mode|set.*heat|heating|warm mode/.test(s)) { send('heat'); toast('Voice: Heat Mode', 'ok'); return; }
+  if (/dry mode|dehumidif/.test(s))                { send('dry');     toast('Voice: Dry Mode', 'ok'); return; }
+  if (/auto mode|automatic/.test(s))               { send('auto');    toast('Voice: Auto Mode', 'ok'); return; }
+  if (/fan only|just fan|fan mode/.test(s))        { send('fanonly'); toast('Voice: Fan Only', 'ok'); return; }
+
+  // Fan
+  if (/fan.*silent|quiet|silent/.test(s))          { send('fs');   toast('Voice: Fan Silent', 'ok'); return; }
+  if (/fan.*max|maximum fan|blast/.test(s))        { send('fmax'); toast('Voice: Fan Max', 'ok'); return; }
+  if (/fan.*auto/.test(s))                         { send('fa');   toast('Voice: Fan Auto', 'ok'); return; }
+  if (/fan.*high|high.*fan/.test(s))               { send('f3');   toast('Voice: Fan High', 'ok'); return; }
+  if (/fan.*med|medium.*fan/.test(s))              { send('f2');   toast('Voice: Fan Medium', 'ok'); return; }
+  if (/fan.*low|low.*fan/.test(s))                 { send('f1');   toast('Voice: Fan Low', 'ok'); return; }
+
+  // Vane
+  if (/swing|oscillat/.test(s))                    { send('vane:swing'); toast('Voice: Swing', 'ok'); return; }
+
+  // Presets via voice
+  if (/sleep/.test(s))    { applyPreset('sleep');   return; }
+  if (/turbo/.test(s))    { applyPreset('turbo');   return; }
+  if (/eco/.test(s))      { applyPreset('eco');     return; }
+  if (/comfort/.test(s))  { applyPreset('comfort'); return; }
+  if (/study/.test(s))    { applyPreset('study');   return; }
+
+  showVoiceResult('Heard: "' + s + '" — not recognized. Try "turn on" or "set temperature to 24"');
+  toast('Voice not recognized', 'err');
+}
+
+function showVoiceResult(msg) {
+  const el = document.getElementById('voiceResult');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+// ════════════════════════════════════════════════════
+//  Automation timers
+// ════════════════════════════════════════════════════
+let schd = {off:null, on:null, sleep:null, away:null};
+let en   = {off:false, on:false, sleep:false, away:false};
+
+function schedToggle(type) {
+  en[type] = !en[type];
+  const id = 'tog'+type.charAt(0).toUpperCase()+type.slice(1);
+  document.getElementById(id).className = 'tog' + (en[type] ? ' on' : '');
+
+  if (schd[type]) { clearTimeout(schd[type]); schd[type] = null; }
+
+  if (!en[type]) { toast('Auto-'+type+' cancelled'); return; }
+
+  if (type === 'sleep') {
+    toast('Sleep timer: temp +2°C in 30min');
+    schd.sleep = setTimeout(async () => {
+      await send('temp:'+(st.temp+2)); toast('Sleep: temp raised +2°C', 'ok');
+      en.sleep = false; document.getElementById('togSleep').className = 'tog';
+    }, 30*60*1000);
+    return;
+  }
+
+  if (type === 'away') {
+    toast('Away mode: eco settings applied');
+    applyPreset('eco');
+    en.away = false; document.getElementById('togAway').className = 'tog';
+    return;
+  }
+
+  const val = document.getElementById(type+'Time').value;
+  const [h,m] = val.split(':').map(Number);
+  const target = new Date(); target.setHours(h,m,0,0);
+  if (target <= new Date()) target.setDate(target.getDate()+1);
+  toast('Auto-'+type.toUpperCase()+' set for '+val);
+
+  schd[type] = setTimeout(() => {
+    send(type==='on' ? 'on' : 'off');
+    toast('Auto '+type.toUpperCase()+' triggered!', 'ok');
+    en[type] = false;
+    document.getElementById('tog'+type.charAt(0).toUpperCase()+type.slice(1)).className='tog';
+  }, target - new Date());
+}
+
+// ════════════════════════════════════════════════════
+//  Toast
+// ════════════════════════════════════════════════════
+let _tt;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.className = 'toast'+(type?' '+type:''), 2800);
+}
+</script>
+</body>
+</html>
