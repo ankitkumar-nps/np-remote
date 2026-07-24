@@ -658,12 +658,23 @@ let st = { power:false, temp:24, mode:'COOL', fan:'AUTO', vane:'AUTO', last:'Non
 // ════════════════════════════════════════════════════
 //  MQTT (Cloud) Config  — HiveMQ Cloud over secure WebSocket
 // ════════════════════════════════════════════════════
+// ── SHAREABLE LINK ──────────────────────────────────────────────
+// Embed the broker login here so ANYONE who opens the page URL can control
+// the AC with zero setup. Use a RESTRICTED user (no access to the /sys topic).
+// ⚠ Anyone with this URL can control the AC — treat the link as the key.
+const EMBED = {
+  host: '55be3afce0e341a1afa417b9e12d8c9a.s1.eu.hivemq.cloud',
+  user: 'npac-web',            // <-- your HiveMQ username
+  pass: '',                    // <-- paste the password here to make the link work for everyone
+  deviceId: 'npac1',
+};
+
 const MQTT = {
-  host: localStorage.getItem('npac_host') || '55be3afce0e341a1afa417b9e12d8c9a.s1.eu.hivemq.cloud',
+  host: localStorage.getItem('npac_host') || EMBED.host,
   port: 8884,                                   // wss (required on HTTPS pages)
-  user: localStorage.getItem('npac_user') || 'npac-web',
-  pass: localStorage.getItem('npac_pass') || '',
-  deviceId: localStorage.getItem('npac_dev') || 'npac1',
+  user: localStorage.getItem('npac_user') || EMBED.user,
+  pass: localStorage.getItem('npac_pass') || EMBED.pass,
+  deviceId: localStorage.getItem('npac_dev') || EMBED.deviceId,
   get base(){ return 'npac/' + this.deviceId; },
   get cmdTopic(){ return this.base + '/cmd'; },
   get stateTopic(){ return this.base + '/state'; },
@@ -757,9 +768,13 @@ function toggleSetup(show){
 
 window.onload = () => {
   updateThemeBtn(document.documentElement.getAttribute('data-theme'));
-  if (!MQTT.pass) toggleSetup(true);   // first-time users: show setup help
-  // Auto mode: reconnect to cloud automatically on open (set in Settings)
-  if (localStorage.getItem('npac_auto') === '1' && MQTT.pass) connectMQTT();
+  // Shareable link: if a login is embedded/saved, auto-connect so anyone who
+  // opens the link controls the AC with no setup. (Disable via Settings if wanted.)
+  if (MQTT.pass) {
+    if (localStorage.getItem('npac_auto') !== '0') connectMQTT();
+  } else {
+    toggleSetup(true);                 // not configured yet — show setup help
+  }
   if (!navigator.bluetooth) {
     document.getElementById('noBle').classList.add('show');
     document.getElementById('btBtn').style.opacity = '.4';
