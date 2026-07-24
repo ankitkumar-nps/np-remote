@@ -687,6 +687,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
       <button class="setup-close" onclick="saveSettings()">Save &amp; Connect</button>
       <button class="modal-cancel" onclick="closeSettings()">Cancel</button>
     </div>
+    <button class="modal-cancel" style="width:100%;margin-top:10px" onclick="resetSettings()">Reset saved settings</button>
   </div>
 </div>
 
@@ -742,6 +743,12 @@ function openSettings(){
   document.getElementById('settingsModal').classList.add('show');
 }
 function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+function resetSettings(){
+  ['npac_host','npac_user','npac_pass','npac_dev','npac_auto'].forEach(k => localStorage.removeItem(k));
+  if (mqttConnected && mqttClient) { try { mqttClient.end(); } catch(e){} }
+  toast('Cloud settings reset');
+  setTimeout(() => location.reload(), 600);
+}
 function saveSettings(){
   const h = document.getElementById('setHost').value.trim();
   const u = document.getElementById('setUser').value.trim();
@@ -820,13 +827,9 @@ function toggleSetup(show){
 
 window.onload = () => {
   updateThemeBtn(document.documentElement.getAttribute('data-theme'));
-  // Shareable link: if a login is embedded/saved, auto-connect so anyone who
-  // opens the link controls the AC with no setup. (Disable via Settings if wanted.)
-  if (MQTT.pass) {
-    if (localStorage.getItem('npac_auto') !== '0') connectMQTT();
-  } else {
-    toggleSetup(true);                 // not configured yet — show setup help
-  }
+  // Auto-connect only if a login is embedded/saved. Never auto-nag — users can
+  // tap the ? button for help or the Cloud button to configure.
+  if (MQTT.pass && localStorage.getItem('npac_auto') !== '0') connectMQTT();
   if (!navigator.bluetooth) {
     document.getElementById('noBle').classList.add('show');
     document.getElementById('btBtn').style.opacity = '.4';
