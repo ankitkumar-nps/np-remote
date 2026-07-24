@@ -727,12 +727,15 @@ const EMBED = {
   deviceId: 'npac1',
 };
 
+// When a login is baked into EMBED, it WINS — ignore any stale saved creds so the
+// shareable link always works (and old wrong passwords can't break it).
+const _useEmbed = !!EMBED.pass;
 const MQTT = {
-  host: localStorage.getItem('npac_host') || EMBED.host,
+  host: _useEmbed ? EMBED.host : (localStorage.getItem('npac_host') || EMBED.host),
   port: 8884,                                   // wss (required on HTTPS pages)
-  user: localStorage.getItem('npac_user') || EMBED.user,
-  pass: localStorage.getItem('npac_pass') || EMBED.pass,
-  deviceId: localStorage.getItem('npac_dev') || EMBED.deviceId,
+  user: _useEmbed ? EMBED.user : (localStorage.getItem('npac_user') || EMBED.user),
+  pass: _useEmbed ? EMBED.pass : (localStorage.getItem('npac_pass') || EMBED.pass),
+  deviceId: _useEmbed ? EMBED.deviceId : (localStorage.getItem('npac_dev') || EMBED.deviceId),
   get base(){ return 'npac/' + this.deviceId; },
   get cmdTopic(){ return this.base + '/cmd'; },
   get stateTopic(){ return this.base + '/state'; },
