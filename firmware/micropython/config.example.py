@@ -28,3 +28,6 @@ BLE_NAME    = "NP ac"
 # ---- Remote management ------------------------------------
 SYS_ENABLE  = False        # OFF by default (safe for a public shareable link).
                            # Flip True only during a maintenance window for OTA code push.
+
+# ---- Home Assistant ---------------------------------------
+HA_DISCOVERY = True        # auto-register as an HA climate entity (-> Google/Apple Home)
