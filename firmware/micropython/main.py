@@ -321,15 +321,22 @@ async def wifi_connect():
 # ---- async loops -------------------------------------------
 async def net_task():
     await wifi_connect()
+    last_ping = time.ticks_ms()
     while True:
         try:
             if not network.WLAN(network.STA_IF).isconnected():
                 await wifi_connect()
-                await asyncio.sleep(5)    # back off; BLE keeps running meanwhile
+                await asyncio.sleep(5)
             elif mqtt is None:
                 mqtt_connect()
+                last_ping = time.ticks_ms()
             else:
-                mqtt.check_msg()          # non-blocking poll
+                mqtt.check_msg()          # read incoming (non-blocking)
+                # keepalive: MicroPython MQTT doesn't auto-ping, so the broker would
+                # drop us after ~keepalive. Ping every 15s to stay 'online'.
+                if time.ticks_diff(time.ticks_ms(), last_ping) > 15000:
+                    mqtt.ping()
+                    last_ping = time.ticks_ms()
         except Exception as e:
             log("net err:", e)
             globals()["mqtt"] = None      # force reconnect
