@@ -256,11 +256,12 @@ def mqtt_connect():
 
 
 # ---- WiFi --------------------------------------------------
-def wifi_connect():
+async def wifi_connect():
+    # async so it never blocks the event loop -> BLE stays responsive during WiFi retries
     wlan = network.WLAN(network.STA_IF)
     if not wlan.active():
         wlan.active(True)
-        time.sleep_ms(300)
+        await asyncio.sleep_ms(300)
     if wlan.isconnected():
         return True
     for ssid, pw in config.WIFI_APS:
@@ -269,36 +270,36 @@ def wifi_connect():
             wlan.disconnect()            # clear any half-open state (fixes "Internal State Error")
         except OSError:
             pass
-        time.sleep_ms(250)
+        await asyncio.sleep_ms(250)
         try:
             wlan.connect(ssid, pw)
         except OSError as e:
             log("WiFi connect err:", e)
-            time.sleep_ms(500)
+            await asyncio.sleep_ms(500)
             continue
         for _ in range(40):
             if wlan.isconnected():
                 log("WiFi:", wlan.ifconfig()[0])
                 return True
-            time.sleep_ms(200)
+            await asyncio.sleep_ms(200)
     log("WiFi: none in range — running BLE-only for now")
     return False
 
 
 # ---- async loops -------------------------------------------
 async def net_task():
-    wifi_connect()
+    await wifi_connect()
     while True:
         try:
-            if mqtt is None:
-                if network.WLAN(network.STA_IF).isconnected():
-                    mqtt_connect()
-                else:
-                    wifi_connect()
+            if not network.WLAN(network.STA_IF).isconnected():
+                await wifi_connect()
+                await asyncio.sleep(5)    # back off; BLE keeps running meanwhile
+            elif mqtt is None:
+                mqtt_connect()
             else:
                 mqtt.check_msg()          # non-blocking poll
         except Exception as e:
-            print("net err:", e)
+            log("net err:", e)
             globals()["mqtt"] = None      # force reconnect
         await asyncio.sleep_ms(200)
 
