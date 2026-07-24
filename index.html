@@ -437,7 +437,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 <div class="hdr">
   <div>
     <div class="logo">NP<span>·</span>AC</div>
-    <div class="sub">MSY-GN22VF · Bluetooth</div>
+    <div class="sub">MSY-GN22VF · WiFi</div>
   </div>
   <div style="display:flex;gap:8px">
     <button class="bt-btn" id="helpBtn" onclick="toggleSetup()" title="Setup help" style="padding:8px 13px">?</button>
@@ -769,7 +769,7 @@ function connectMQTT(){
     send('s');                                  // ask device for current state
   });
   mqttClient.on('message', (t, m) => {
-    if (t === MQTT.stateTopic) { try { updateState(JSON.parse(m.toString())); } catch(e){} }
+    if (t === MQTT.stateTopic) { deviceOnline = true; try { updateState(JSON.parse(m.toString())); } catch(e){} }
     else if (t === MQTT.statusTopic) {
       deviceOnline = (m.toString() === 'online');
       document.getElementById('lastAct').textContent = 'Device ' + m.toString();
