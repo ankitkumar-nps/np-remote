@@ -373,6 +373,18 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 }
 .setup-close:active{transform:scale(.96);}
 
+/* ── Settings modal ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-bg.show{display:flex;}
+.modal{background:var(--p1);border:1px solid var(--border);border-radius:18px;padding:22px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+.fld{display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;}
+.fld input{display:block;width:100%;margin-top:5px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 12px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;text-transform:none;letter-spacing:normal;}
+.fld input:focus{border-color:var(--glow);}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:4px 0 16px;cursor:pointer;}
+.chk input{width:18px;height:18px;}
+.modal-btns{display:flex;gap:10px;}
+.modal-cancel{background:var(--p2);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:9px 18px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+
 @media(max-width:380px){
   .t-num{font-size:56px;}
   .two{grid-template-columns:1fr;}
@@ -417,10 +429,14 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
   <div class="clabel">Getting Started</div>
   <ol class="setup-steps">
     <li><b>In the same room?</b> Tap <b>BLE</b> (top-right) — works on Chrome/Edge, no internet needed.</li>
-    <li><b>From anywhere?</b> Tap <b>Cloud</b>, then enter your HiveMQ host, username, password &amp; device id. Right-click / long-press <b>Cloud</b> to edit these later.</li>
-    <li>No broker yet? Create a free one at <a href="https://www.hivemq.com/mqtt-cloud-broker/" target="_blank" rel="noopener">HiveMQ Cloud</a> → Serverless → add an access user, then use those details above.</li>
+    <li><b>From anywhere (home/office)?</b> Open <b>Settings</b> below, enter your HiveMQ host, username, password &amp; device id, and tick <b>Auto-connect</b> so it links up every time you open the page.</li>
+    <li>No broker yet? Create a free one at <a href="https://www.hivemq.com/mqtt-cloud-broker/" target="_blank" rel="noopener">HiveMQ Cloud</a> → Serverless → add an access user, then paste those details in Settings.</li>
+    <li>Prefer dark? Use the <b>🌙 / ☀</b> button (top-right) — the app opens in light mode by default.</li>
   </ol>
-  <button class="setup-close" onclick="toggleSetup(false)">Got it</button>
+  <div class="modal-btns">
+    <button class="setup-close" onclick="openSettings()">Open Settings</button>
+    <button class="modal-cancel" onclick="toggleSetup(false)">Got it</button>
+  </div>
 </div>
 
 <!-- Status -->
@@ -608,6 +624,22 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 
 <div class="toast" id="toast"></div>
 
+<!-- Settings modal -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal">
+    <div class="clabel">Cloud Settings</div>
+    <label class="fld">Broker Host<input id="setHost" placeholder="xxxx.s1.eu.hivemq.cloud" autocomplete="off"></label>
+    <label class="fld">Username<input id="setUser" placeholder="npac-web" autocomplete="off"></label>
+    <label class="fld">Password<input id="setPass" type="password" placeholder="••••••" autocomplete="off"></label>
+    <label class="fld">Device ID<input id="setDev" placeholder="npac1" autocomplete="off"></label>
+    <label class="chk"><input type="checkbox" id="setAuto"> Auto-connect when I open this page</label>
+    <div class="modal-btns">
+      <button class="setup-close" onclick="saveSettings()">Save &amp; Connect</button>
+      <button class="modal-cancel" onclick="closeSettings()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════
 //  BLE Config
@@ -639,22 +671,36 @@ const MQTT = {
 };
 let mqttClient = null, mqttConnected = false;
 
-function cloudConfig(){
-  const h = prompt('HiveMQ host (xxxx.s1.eu.hivemq.cloud):', MQTT.host); if(h===null) return;
-  const u = prompt('MQTT username:', MQTT.user); if(u===null) return;
-  const p = prompt('MQTT password:', MQTT.pass); if(p===null) return;
-  const d = prompt('Device ID:', MQTT.deviceId) || 'npac1';
-  localStorage.setItem('npac_host', h.trim());
-  localStorage.setItem('npac_user', u.trim());
-  localStorage.setItem('npac_pass', p);
-  localStorage.setItem('npac_dev', d.trim());
-  MQTT.host=h.trim(); MQTT.user=u.trim(); MQTT.pass=p; MQTT.deviceId=d.trim();
-  toast('Cloud config saved');
+// Settings modal — any user enters host/user/pass here (saved on their device)
+function openSettings(){
+  document.getElementById('setHost').value = MQTT.host.startsWith('xxxx') ? '' : MQTT.host;
+  document.getElementById('setUser').value = MQTT.user;
+  document.getElementById('setPass').value = MQTT.pass;
+  document.getElementById('setDev').value  = MQTT.deviceId;
+  document.getElementById('setAuto').checked = localStorage.getItem('npac_auto') === '1';
+  document.getElementById('settingsModal').classList.add('show');
 }
+function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+function saveSettings(){
+  const h = document.getElementById('setHost').value.trim();
+  const u = document.getElementById('setUser').value.trim();
+  const p = document.getElementById('setPass').value;
+  const d = document.getElementById('setDev').value.trim() || 'npac1';
+  const a = document.getElementById('setAuto').checked;
+  if (!h || !u || !p) { toast('Enter host, username & password', 'err'); return; }
+  localStorage.setItem('npac_host', h); localStorage.setItem('npac_user', u);
+  localStorage.setItem('npac_pass', p); localStorage.setItem('npac_dev', d);
+  localStorage.setItem('npac_auto', a ? '1' : '0');
+  MQTT.host=h; MQTT.user=u; MQTT.pass=p; MQTT.deviceId=d;
+  closeSettings(); toggleSetup(false); toast('Settings saved');
+  if (!mqttConnected) connectMQTT();
+}
+// backward-compat alias
+function cloudConfig(){ openSettings(); }
 
 function connectMQTT(){
   if (mqttConnected) { mqttClient.end(); return; }
-  if (!MQTT.pass) { cloudConfig(); if(!MQTT.pass) return; }
+  if (!MQTT.pass || MQTT.host.startsWith('xxxx')) { openSettings(); return; }
   toast('Connecting to cloud…');
   const url = 'wss://' + MQTT.host + ':' + MQTT.port + '/mqtt';
   mqttClient = mqtt.connect(url, {
@@ -712,6 +758,8 @@ function toggleSetup(show){
 window.onload = () => {
   updateThemeBtn(document.documentElement.getAttribute('data-theme'));
   if (!MQTT.pass) toggleSetup(true);   // first-time users: show setup help
+  // Auto mode: reconnect to cloud automatically on open (set in Settings)
+  if (localStorage.getItem('npac_auto') === '1' && MQTT.pass) connectMQTT();
   if (!navigator.bluetooth) {
     document.getElementById('noBle').classList.add('show');
     document.getElementById('btBtn').style.opacity = '.4';

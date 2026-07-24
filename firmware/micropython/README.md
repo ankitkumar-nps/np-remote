@@ -43,9 +43,29 @@ mpremote connect COM20 repl        # Ctrl-] to exit
 You should see WiFi connect, `MQTT connected`, `BLE advertising as NP ac`, and
 `IR>> ...` when commands arrive.
 
-## 3. Edit config first
-In `config.py` set `MQTT_HOST/USER/PASS` (from your HiveMQ Serverless cluster),
-confirm `IR_PIN`, and set `BLE_ENABLE=False` if the C3 runs low on memory.
+## 3. Edit config first  (start from the example)
+The repo ships `config.example.py` (safe placeholders); your real `config.py` is
+**gitignored** so credentials never get pushed. Create it once:
+
+```bash
+# from firmware/micropython/
+cp config.example.py config.py        # Windows: copy config.example.py config.py
+```
+
+Then edit `config.py`:
+```python
+IR_PIN    = 2                                   # GPIO of the IR LED (D0 = GPIO2 on XIAO C3)
+WIFI_APS  = [("ghost","nowpurchase@123"),
+             ("Me3tings4ever","Me3tings4ever")]
+MQTT_HOST = "xxxxxxxx.s1.eu.hivemq.cloud"       # your HiveMQ Serverless cluster URL
+MQTT_USER = "npac-device"                       # device credentials (keep private)
+MQTT_PASS = "<the password you set>"
+DEVICE_ID = "npac1"
+BLE_ENABLE = True                               # set False if the C3 runs low on memory
+SYS_ENABLE = True                               # remote code-update channel (see below)
+```
+Re-upload just this file anytime to reconfigure:
+`mpremote connect COM20 fs cp config.py :`
 
 ## MQTT topics
 | Topic | Dir | Payload |
