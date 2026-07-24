@@ -6,39 +6,13 @@
 <title>NP ac · Remote</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('npac_theme')||'light');</script>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('npac_theme')||'dark');</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
-/* Light theme = default — clean, modern, soft depth */
+/* ===== Default theme: DARK (neon) ===== */
 :root{
-  --page:linear-gradient(180deg,#f7f9fc 0%,#e9eef6 100%);
-  --bg:#eef1f6;
-  --p1:#ffffff;
-  --p2:#f2f5f9;
-  --p3:#e4e9f1;
-  --ice:#0ea5e9;
-  --glow:#0284c7;
-  --warm:#f97316;
-  --green:#16a34a;
-  --red:#ef4444;
-  --purple:#7c3aed;
-  --gold:#ca8a04;
-  --border:rgba(15,23,42,0.09);
-  --border-hover:rgba(2,132,199,0.40);
-  --text:#0f172a;
-  --muted:#64748b;
-  --on-glow:0 0 14px rgba(22,163,74,.35);
-  --blue-glow:0 0 18px rgba(2,132,199,.22);
-  --tnum-grad:linear-gradient(150deg,#0f172a 0%,#0284c7 95%);
-  --card-shadow:0 1px 2px rgba(15,23,42,.05),0 12px 28px -14px rgba(15,23,42,.18);
-  --inset-bg:rgba(15,23,42,.04);
-  --track-bg:rgba(15,23,42,.11);
-  --anim-a:rgba(14,165,233,.12);
-  --anim-b:rgba(124,58,237,.06);
-}
-/* Dark theme (toggle) = original look */
-:root[data-theme="dark"]{
+  --page:#060608;
   --bg:#060608;
   --p1:#0a0a10;
   --p2:#111120;
@@ -50,19 +24,60 @@
   --red:#ff3366;
   --purple:#9d4edd;
   --gold:#ffd700;
-  --border:rgba(168,237,234,0.1);
-  --text:#e8f4f8;
-  --muted:#4a6572;
+  --border:rgba(168,237,234,0.12);
+  --border-hover:rgba(168,237,234,0.25);
+  --text:#eaf6fb;
+  --muted:#93a7b3;                       /* brighter than before for readability */
   --on-glow:0 0 20px rgba(57,255,20,.4);
   --blue-glow:0 0 30px rgba(0,212,255,.3);
   --tnum-grad:linear-gradient(160deg,#fff 30%,var(--glow));
   --card-shadow:none;
   --inset-bg:rgba(0,0,0,.3);
-  --track-bg:rgba(255,255,255,.1);
+  --track-bg:rgba(255,255,255,.12);
   --anim-a:rgba(0,100,180,.25);
   --anim-b:rgba(100,0,180,.15);
-  --page:var(--bg);
-  --border-hover:rgba(168,237,234,.22);
+}
+/* explicit dark selector (same as default) */
+:root[data-theme="dark"]{
+  --page:#060608; --bg:#060608; --p1:#0a0a10; --p2:#111120; --p3:#1a1a2e;
+  --ice:#a8edea; --glow:#00d4ff; --warm:#ff7f3f; --green:#39ff14; --red:#ff3366;
+  --purple:#9d4edd; --gold:#ffd700;
+  --border:rgba(168,237,234,0.12); --border-hover:rgba(168,237,234,0.25);
+  --text:#eaf6fb; --muted:#93a7b3;
+  --on-glow:0 0 20px rgba(57,255,20,.4); --blue-glow:0 0 30px rgba(0,212,255,.3);
+  --tnum-grad:linear-gradient(160deg,#fff 30%,var(--glow));
+  --card-shadow:none; --inset-bg:rgba(0,0,0,.3); --track-bg:rgba(255,255,255,.12);
+  --anim-a:rgba(0,100,180,.25); --anim-b:rgba(100,0,180,.15);
+}
+
+/* ===== DIM (soft slate dark) ===== */
+:root[data-theme="dim"]{
+  --page:#0f172a; --bg:#0f172a; --p1:#1e293b; --p2:#273449; --p3:#334155;
+  --ice:#38bdf8; --glow:#38bdf8; --warm:#fb923c; --green:#4ade80; --red:#f87171;
+  --purple:#a78bfa; --gold:#fbbf24;
+  --border:rgba(148,163,184,0.20); --border-hover:rgba(56,189,248,0.40);
+  --text:#eef4fb; --muted:#a3b2c4;
+  --on-glow:0 0 14px rgba(74,222,128,.35); --blue-glow:0 0 18px rgba(56,189,248,.28);
+  --tnum-grad:linear-gradient(150deg,#f1f5f9 10%,#38bdf8 95%);
+  --card-shadow:0 8px 24px -12px rgba(0,0,0,.5);
+  --inset-bg:rgba(0,0,0,.25); --track-bg:rgba(255,255,255,.12);
+  --anim-a:rgba(56,189,248,.12); --anim-b:rgba(167,139,250,.08);
+}
+
+/* ===== LIGHT (high contrast, not blinding) ===== */
+:root[data-theme="light"]{
+  --page:linear-gradient(180deg,#eef2f7 0%,#dde5f0 100%);
+  --bg:#e6ecf3; --p1:#ffffff; --p2:#eef2f8; --p3:#dce4ee;
+  --ice:#0369a1; --glow:#0369a1; --warm:#c2410c; --green:#15803d; --red:#dc2626;
+  --purple:#6d28d9; --gold:#a16207;
+  --border:rgba(15,23,42,0.16); --border-hover:rgba(3,105,161,0.55);
+  --text:#0b1220;                        /* near-black — clearly readable */
+  --muted:#42526a;                       /* dark slate — readable, not faint */
+  --on-glow:0 0 12px rgba(21,128,61,.3); --blue-glow:0 0 16px rgba(3,105,161,.22);
+  --tnum-grad:linear-gradient(150deg,#0b1220 0%,#0369a1 95%);
+  --card-shadow:0 1px 2px rgba(15,23,42,.06),0 12px 28px -14px rgba(15,23,42,.22);
+  --inset-bg:rgba(15,23,42,.05); --track-bg:rgba(15,23,42,.17);
+  --anim-a:rgba(3,105,161,.10); --anim-b:rgba(109,40,217,.06);
 }
 
 html,body{height:100%;overflow-x:hidden}
@@ -752,16 +767,18 @@ function setCloudUI(ok){
 // ════════════════════════════════════════════════════
 //  Theme (light default, toggle to dark) — persisted
 // ════════════════════════════════════════════════════
+const THEMES = ['dark', 'dim', 'light'];
+const THEME_ICON = { dark:'🌙', dim:'🌒', light:'☀' };
 function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  const next = cur === 'dark' ? 'light' : 'dark';
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('npac_theme', next);
   updateThemeBtn(next);
 }
 function updateThemeBtn(t){
   const b = document.getElementById('themeBtn');
-  if (b) b.textContent = (t === 'dark') ? '☀' : '🌙';
+  if (b) b.textContent = THEME_ICON[t] || '🌙';
 }
 
 // Getting-started panel (auto-shows on first visit)
