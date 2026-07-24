@@ -49,8 +49,40 @@ def log(*a):
             pass
 
 
+_batt_adc = None
+def batt_init():
+    global _batt_adc
+    if getattr(config, "BATTERY_PIN", None) is not None:
+        from machine import ADC, Pin
+        _batt_adc = ADC(Pin(config.BATTERY_PIN))
+        try:
+            _batt_adc.atten(ADC.ATTN_11DB)   # ~0-3.3V range
+        except Exception:
+            pass
+        log("Battery monitor on GPIO", config.BATTERY_PIN)
+
+def read_battery():
+    if _batt_adc is None:
+        return None
+    try:
+        s = 0
+        for _ in range(16):
+            try:
+                s += _batt_adc.read_uv()             # calibrated microvolts
+            except Exception:
+                s += _batt_adc.read_u16() / 65535 * 3.3 * 1e6
+        v = (s / 16) / 1e6 * config.BATTERY_DIVIDER  # actual battery volts
+        pct = (v - config.BATT_EMPTY_V) / (config.BATT_FULL_V - config.BATT_EMPTY_V) * 100
+        return int(max(0, min(100, pct)))
+    except Exception:
+        return None
+
 def state_json():
-    return json.dumps(st)
+    d = dict(st)
+    b = read_battery()
+    if b is not None:
+        d["batt"] = b
+    return json.dumps(d)
 
 
 def push_state():
@@ -322,6 +354,7 @@ async def wifi_connect():
 async def net_task():
     await wifi_connect()
     last_ping = time.ticks_ms()
+    last_state = time.ticks_ms()
     while True:
         try:
             if not network.WLAN(network.STA_IF).isconnected():
@@ -337,6 +370,10 @@ async def net_task():
                 if time.ticks_diff(time.ticks_ms(), last_ping) > 15000:
                     mqtt.ping()
                     last_ping = time.ticks_ms()
+                # refresh state (incl. battery) every 60s
+                if time.ticks_diff(time.ticks_ms(), last_state) > 60000:
+                    push_state()
+                    last_state = time.ticks_ms()
         except Exception as e:
             log("net err:", e)
             globals()["mqtt"] = None      # force reconnect
@@ -350,6 +387,7 @@ async def main():
     print("  cmd :", T_CMD)
     print("  sys :", T_SYS if config.SYS_ENABLE else "(disabled)")
     print("================================")
+    batt_init()
 
     tasks = [net_task()]
     if config.BLE_ENABLE:

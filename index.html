@@ -469,6 +469,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 <div class="statusbar">
   <span class="lbl">Last</span>
   <span id="lastAct">—</span>
+  <span id="battInd" style="margin-left:auto;font-weight:600;letter-spacing:.5px"></span>
 </div>
 
 <!-- Power -->
@@ -968,6 +969,15 @@ function renderState() {
   });
 
   document.getElementById('lastAct').textContent = st.last || '—';
+
+  const bi = document.getElementById('battInd');
+  if (bi) {
+    if (st.batt != null) {
+      const icon = st.batt > 60 ? '🔋' : (st.batt > 20 ? '🔋' : '🪫');
+      bi.textContent = icon + ' ' + st.batt + '%';
+      bi.style.color = st.batt > 20 ? 'var(--green)' : 'var(--red)';
+    } else bi.textContent = '';
+  }
 }
 
 function setConnUI(ok) {
