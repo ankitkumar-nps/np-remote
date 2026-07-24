@@ -405,6 +405,17 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 .modal-btns{display:flex;gap:10px;}
 .modal-cancel{background:var(--p2);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:9px 18px;font-family:'Rajdhani',sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
 
+/* ── Smart Home section ── */
+.sh-intro{font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;}
+.sh-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sh-opt{display:block;padding:16px 10px;border-radius:14px;border:1px solid var(--border);background:var(--p2);text-align:center;text-decoration:none;transition:.2s;}
+.sh-opt:hover{border-color:var(--glow);box-shadow:var(--blue-glow);}
+.sh-opt:active{transform:scale(.96);}
+.sh-ic{font-size:24px;margin-bottom:6px;}
+.sh-name{font-size:13px;font-weight:700;color:var(--text);}
+.sh-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.3px;}
+.sh-note{font-size:11px;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5;}
+
 @media(max-width:380px){
   .t-num{font-size:56px;}
   .two{grid-template-columns:1fr;}
@@ -562,6 +573,25 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
     </div>
   </div>
   <div class="voice-result" id="voiceResult"></div>
+</div>
+
+<!-- Smart Home -->
+<div class="card">
+  <div class="clabel">Smart Home</div>
+  <div class="sh-intro">Control from Google Home, Apple Home, or Matter. Tap a path to open its setup guide:</div>
+  <div class="sh-grid">
+    <a class="sh-opt" href="https://github.com/ankitkumar-nps/np-remote/blob/main/docs/HOME-ASSISTANT.md" target="_blank" rel="noopener">
+      <div class="sh-ic">🏠</div>
+      <div class="sh-name">Google / Apple Home</div>
+      <div class="sh-sub">via Home Assistant · free</div>
+    </a>
+    <a class="sh-opt" href="https://github.com/ankitkumar-nps/np-remote/blob/main/docs/MATTER-SETUP.md" target="_blank" rel="noopener">
+      <div class="sh-ic">◈</div>
+      <div class="sh-name">Matter</div>
+      <div class="sh-sub">native · needs a hub</div>
+    </a>
+  </div>
+  <div class="sh-note">Needs the device online (WiFi + cloud). Bluetooth already works for in-room control.</div>
 </div>
 
 <!-- Smart Presets -->
