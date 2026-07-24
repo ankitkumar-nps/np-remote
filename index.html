@@ -355,6 +355,24 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 }
 .no-ble.show{display:block;}
 
+/* ── Setup / Getting Started ── */
+.setup-card{
+  background:linear-gradient(135deg,rgba(0,145,194,.06),rgba(139,63,214,.05));
+  border:1px solid var(--border);border-radius:16px;
+  padding:18px;margin-bottom:16px;display:none;box-shadow:var(--card-shadow);
+}
+.setup-card.show{display:block;}
+.setup-steps{margin:10px 0 14px;padding-left:20px;font-size:13px;line-height:1.7;color:var(--text);}
+.setup-steps li{margin-bottom:8px;}
+.setup-steps a{color:var(--glow);font-weight:600;}
+.setup-steps b{color:var(--glow);font-weight:700;}
+.setup-close{
+  background:var(--glow);color:#fff;border:none;border-radius:10px;
+  padding:9px 20px;font-family:'Rajdhani',sans-serif;font-weight:600;
+  font-size:13px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;
+}
+.setup-close:active{transform:scale(.96);}
+
 @media(max-width:380px){
   .t-num{font-size:56px;}
   .two{grid-template-columns:1fr;}
@@ -376,6 +394,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
     <div class="sub">MSY-GN22VF · Bluetooth</div>
   </div>
   <div style="display:flex;gap:8px">
+    <button class="bt-btn" id="helpBtn" onclick="toggleSetup()" title="Setup help" style="padding:8px 13px">?</button>
     <button class="bt-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark" style="padding:8px 12px">🌙</button>
     <button class="bt-btn" id="cloudBtn" onclick="connectMQTT()" oncontextmenu="cloudConfig();return false" title="Tap to connect · long-press/right-click to configure">
       <div class="bt-dot" id="cloudDot"></div>
@@ -391,6 +410,17 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 <!-- No BLE warning -->
 <div class="no-ble" id="noBle">
   ⚠ Web Bluetooth not supported. Use <strong>Chrome or Edge on Android/desktop</strong>. Safari and Firefox don't support Web Bluetooth.
+</div>
+
+<!-- Getting Started -->
+<div class="setup-card" id="setupCard">
+  <div class="clabel">Getting Started</div>
+  <ol class="setup-steps">
+    <li><b>In the same room?</b> Tap <b>BLE</b> (top-right) — works on Chrome/Edge, no internet needed.</li>
+    <li><b>From anywhere?</b> Tap <b>Cloud</b>, then enter your HiveMQ host, username, password &amp; device id. Right-click / long-press <b>Cloud</b> to edit these later.</li>
+    <li>No broker yet? Create a free one at <a href="https://www.hivemq.com/mqtt-cloud-broker/" target="_blank" rel="noopener">HiveMQ Cloud</a> → Serverless → add an access user, then use those details above.</li>
+  </ol>
+  <button class="setup-close" onclick="toggleSetup(false)">Got it</button>
 </div>
 
 <!-- Status -->
@@ -672,8 +702,16 @@ function updateThemeBtn(t){
   if (b) b.textContent = (t === 'dark') ? '☀' : '🌙';
 }
 
+// Getting-started panel (auto-shows on first visit)
+function toggleSetup(show){
+  const el = document.getElementById('setupCard');
+  if (show === undefined) show = !el.classList.contains('show');
+  el.classList.toggle('show', show);
+}
+
 window.onload = () => {
   updateThemeBtn(document.documentElement.getAttribute('data-theme'));
+  if (!MQTT.pass) toggleSetup(true);   // first-time users: show setup help
   if (!navigator.bluetooth) {
     document.getElementById('noBle').classList.add('show');
     document.getElementById('btBtn').style.opacity = '.4';
