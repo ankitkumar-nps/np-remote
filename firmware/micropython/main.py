@@ -288,13 +288,14 @@ def mqtt_connect():
 
 # ---- WiFi --------------------------------------------------
 async def wifi_connect():
-    # async so it never blocks the event loop -> BLE stays responsive during WiFi retries
     wlan = network.WLAN(network.STA_IF)
-    if not wlan.active():
-        wlan.active(True)
-        await asyncio.sleep_ms(300)
     if wlan.isconnected():
         return True
+    # clean radio-reset cycle — makes the C3 reliably see/join the AP
+    wlan.active(False)
+    await asyncio.sleep_ms(400)
+    wlan.active(True)
+    await asyncio.sleep_ms(800)
     for ssid, pw in (_load_saved_wifi() + list(config.WIFI_APS)):   # provisioned WiFi first
         log("WiFi: trying", ssid)
         try:

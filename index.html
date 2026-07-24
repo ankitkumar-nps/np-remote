@@ -446,17 +446,9 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
       <div class="bt-dot" id="cloudDot"></div>
       <span id="cloudTxt">Cloud</span>
     </button>
-    <button class="bt-btn" id="btBtn" onclick="connectBLE()">
-      <div class="bt-dot" id="btDot"></div>
-      <span id="btTxt">BLE</span>
-    </button>
   </div>
 </div>
 
-<!-- No BLE warning -->
-<div class="no-ble" id="noBle">
-  ⚠ Web Bluetooth not supported. Use <strong>Chrome or Edge on Android/desktop</strong>. Safari and Firefox don't support Web Bluetooth.
-</div>
 
 <!-- Getting Started -->
 <div class="setup-card" id="setupCard">
@@ -576,13 +568,6 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
     </div>
   </div>
   <div class="voice-result" id="voiceResult"></div>
-</div>
-
-<!-- Get device online (BLE WiFi provisioning) -->
-<div class="card">
-  <div class="clabel">Get Device Online</div>
-  <div class="sh-intro">Connect over Bluetooth, then send your home WiFi — the AC joins the internet and the web link controls it from anywhere, for everyone.</div>
-  <button class="setup-close" style="width:100%" onclick="provisionWiFi()">📶 Set Device WiFi (over Bluetooth)</button>
 </div>
 
 <!-- Smart Presets -->
@@ -837,11 +822,6 @@ window.onload = () => {
   // Auto-connect only if a login is embedded/saved. Never auto-nag — users can
   // tap the ? button for help or the Cloud button to configure.
   if (MQTT.pass && localStorage.getItem('npac_auto') !== '0') connectMQTT();
-  if (!navigator.bluetooth) {
-    document.getElementById('noBle').classList.add('show');
-    document.getElementById('btBtn').style.opacity = '.4';
-    document.getElementById('btBtn').style.pointerEvents = 'none';
-  }
   updateSlider(24);
   renderState();
 };

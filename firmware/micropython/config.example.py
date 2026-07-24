@@ -22,7 +22,8 @@ MQTT_PASS   = "CHANGE_ME"                     # Access-Management password
 DEVICE_ID   = "npac1"                         # topic namespace
 
 # ---- BLE ---------------------------------------------------
-BLE_ENABLE  = True         # set False if the C3 runs low on memory (WiFi/MQTT is primary)
+BLE_ENABLE  = False        # WiFi-only recommended: BLE + WiFi share one radio on the C3
+                           # and conflict. Keep False so WiFi/cloud is reliable.
 BLE_NAME    = "NP ac"
 
 # ---- Remote management ------------------------------------
