@@ -906,22 +906,19 @@ async function sendRaw(str) {
 
 let deviceOnline = false;
 async function send(cmd) {
-  // Prefer Bluetooth when connected — instant, in-room, works even if the board
-  // isn't on the cloud. Use cloud only when BLE isn't connected (remote control).
-  if (connected && rxChar) {
-    const ok = await sendRaw(cmd);
-    if (ok) console.log('BLE sent:', cmd);
-    return ok;
-  }
+  // Cloud-only: publish the command. If not connected, reconnect and retry once.
   if (mqttConnected && mqttClient) {
-    if (!deviceOnline) toast('Device is offline — tap 📶 Set Device WiFi so it can receive commands', 'err');
     mqttClient.publish(MQTT.cmdTopic, cmd);
-    console.log('MQTT sent:', cmd);
+    console.log('sent:', cmd);
     return true;
   }
-  const ok = await sendRaw(cmd);
-  if (ok) console.log('BLE sent:', cmd);
-  return ok;
+  toast('Reconnecting to cloud…');
+  connectMQTT();
+  setTimeout(() => {
+    if (mqttConnected && mqttClient) mqttClient.publish(MQTT.cmdTopic, cmd);
+    else toast('Not connected — tap Cloud', 'err');
+  }, 1500);
+  return false;
 }
 
 // ════════════════════════════════════════════════════
