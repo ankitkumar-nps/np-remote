@@ -802,6 +802,7 @@ function connectMQTT(){
   mqttClient.on('message', (t, m) => {
     if (t === MQTT.stateTopic) { try { updateState(JSON.parse(m.toString())); } catch(e){} }
     else if (t === MQTT.statusTopic) {
+      deviceOnline = (m.toString() === 'online');
       document.getElementById('lastAct').textContent = 'Device ' + m.toString();
     }
   });
@@ -938,9 +939,17 @@ async function sendRaw(str) {
   return true;
 }
 
+let deviceOnline = false;
 async function send(cmd) {
-  // Prefer cloud if connected (works from anywhere), else fall back to BLE.
+  // Prefer Bluetooth when connected — instant, in-room, works even if the board
+  // isn't on the cloud. Use cloud only when BLE isn't connected (remote control).
+  if (connected && rxChar) {
+    const ok = await sendRaw(cmd);
+    if (ok) console.log('BLE sent:', cmd);
+    return ok;
+  }
   if (mqttConnected && mqttClient) {
+    if (!deviceOnline) toast('Device is offline — tap 📶 Set Device WiFi so it can receive commands', 'err');
     mqttClient.publish(MQTT.cmdTopic, cmd);
     console.log('MQTT sent:', cmd);
     return true;
