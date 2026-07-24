@@ -10,30 +10,32 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
-/* Light theme = default */
+/* Light theme = default — clean, modern, soft depth */
 :root{
-  --bg:#eef2f6;
+  --page:linear-gradient(180deg,#f7f9fc 0%,#e9eef6 100%);
+  --bg:#eef1f6;
   --p1:#ffffff;
-  --p2:#f3f6fa;
-  --p3:#e6ecf3;
-  --ice:#0d9488;
-  --glow:#0091c2;
-  --warm:#e8620c;
+  --p2:#f2f5f9;
+  --p3:#e4e9f1;
+  --ice:#0ea5e9;
+  --glow:#0284c7;
+  --warm:#f97316;
   --green:#16a34a;
-  --red:#e11d48;
-  --purple:#8b3fd6;
-  --gold:#c79200;
-  --border:rgba(20,40,60,0.12);
-  --text:#16232e;
-  --muted:#6b7d8a;
-  --on-glow:0 0 16px rgba(22,163,74,.25);
-  --blue-glow:0 0 22px rgba(0,145,194,.18);
-  --tnum-grad:linear-gradient(160deg,#123b52 20%,var(--glow));
-  --card-shadow:0 2px 12px rgba(20,40,60,.07);
-  --inset-bg:rgba(20,40,60,.05);
-  --track-bg:rgba(20,40,60,.14);
-  --anim-a:rgba(0,145,194,.10);
-  --anim-b:rgba(139,63,214,.07);
+  --red:#ef4444;
+  --purple:#7c3aed;
+  --gold:#ca8a04;
+  --border:rgba(15,23,42,0.09);
+  --border-hover:rgba(2,132,199,0.40);
+  --text:#0f172a;
+  --muted:#64748b;
+  --on-glow:0 0 14px rgba(22,163,74,.35);
+  --blue-glow:0 0 18px rgba(2,132,199,.22);
+  --tnum-grad:linear-gradient(150deg,#0f172a 0%,#0284c7 95%);
+  --card-shadow:0 1px 2px rgba(15,23,42,.05),0 12px 28px -14px rgba(15,23,42,.18);
+  --inset-bg:rgba(15,23,42,.04);
+  --track-bg:rgba(15,23,42,.11);
+  --anim-a:rgba(14,165,233,.12);
+  --anim-b:rgba(124,58,237,.06);
 }
 /* Dark theme (toggle) = original look */
 :root[data-theme="dark"]{
@@ -59,11 +61,14 @@
   --track-bg:rgba(255,255,255,.1);
   --anim-a:rgba(0,100,180,.25);
   --anim-b:rgba(100,0,180,.15);
+  --page:var(--bg);
+  --border-hover:rgba(168,237,234,.22);
 }
 
 html,body{height:100%;overflow-x:hidden}
 body{
-  background:var(--bg);
+  background:var(--page);
+  background-attachment:fixed;
   color:var(--text);
   font-family:'Rajdhani',sans-serif;
   font-size:16px;
@@ -141,7 +146,7 @@ body{
   box-shadow:var(--card-shadow);
   transition:border-color .3s,box-shadow .3s;
 }
-.card:hover{border-color:rgba(168,237,234,.2);}
+.card:hover{border-color:var(--border-hover);}
 .clabel{
   font-size:10px;letter-spacing:3px;text-transform:uppercase;
   color:var(--muted);margin-bottom:16px;
