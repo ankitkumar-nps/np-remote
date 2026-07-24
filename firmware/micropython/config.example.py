@@ -1,33 +1,30 @@
 # ============================================================
-#  NP ac  —  configuration
-#  Everything you might change lives here. Edit and re-upload
-#  just this file (config.py) to reconfigure the device.
+#  NP ac  —  configuration TEMPLATE
+#  Copy this file to  config.py  and fill in your values.
+#    cp config.example.py config.py      (Windows: copy config.example.py config.py)
+#  config.py is gitignored so your credentials never get pushed.
 # ============================================================
 
 # ---- IR ----------------------------------------------------
-IR_PIN      = 2        # GPIO wired to the IR LED signal ("D0"). D0=GPIO2 on XIAO C3.
+IR_PIN      = 2        # GPIO wired to the IR LED signal ("D0" = GPIO2 on XIAO C3)
 
 # ---- WiFi (tried in order) --------------------------------
 WIFI_APS = [
-    ("ghost",         "nowpurchase@123"),
-    ("Me3tings4ever", "Me3tings4ever"),     # SSID == password (confirmed)
+    ("YOUR_WIFI_SSID", "YOUR_WIFI_PASSWORD"),
+    # ("second-network", "its-password"),
 ]
 
 # ---- MQTT (HiveMQ Cloud Serverless, free) -----------------
-MQTT_HOST   = "xxxxxxxx.s1.eu.hivemq.cloud"   # <-- your cluster URL
+MQTT_HOST   = "xxxxxxxx.s1.eu.hivemq.cloud"   # your cluster URL
 MQTT_PORT   = 8883                            # TLS
-MQTT_USER   = "npac-device"                   # device credentials
-MQTT_PASS   = "CHANGE_ME"
+MQTT_USER   = "npac-device"                   # Access-Management username
+MQTT_PASS   = "CHANGE_ME"                     # Access-Management password
 DEVICE_ID   = "npac1"                         # topic namespace
 
 # ---- BLE ---------------------------------------------------
-# BLE + WiFi + TLS together is heavy on the C3. If the board gets
-# unstable / low on memory, set this False (WiFi/MQTT is the main path).
-BLE_ENABLE  = True
+BLE_ENABLE  = True         # set False if the C3 runs low on memory (WiFi/MQTT is primary)
 BLE_NAME    = "NP ac"
 
 # ---- Remote management ------------------------------------
-# Enables the npac/<id>/sys topic for pushing code + reboot from afar.
-# Powerful = keep this device's MQTT user private; give the web app a
-# separate, restricted user that cannot publish to /sys.
-SYS_ENABLE  = True
+SYS_ENABLE  = False        # OFF by default (safe for a public shareable link).
+                           # Flip True only during a maintenance window for OTA code push.

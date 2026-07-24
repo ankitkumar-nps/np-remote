@@ -31,12 +31,12 @@ def start(name, on_cmd):
             try:
                 conn, data = await rx.written()
                 holder["buf"] += data.decode()
+                # the web app terminates every command with '\n'
                 while "\n" in holder["buf"]:
                     line, _, holder["buf"] = holder["buf"].partition("\n")
                     on_cmd(line, "BLE")
-                # command sent without newline (single chunk)
-                if holder["buf"] and len(holder["buf"]) < 24:
-                    on_cmd(holder["buf"], "BLE")
+                # guard against a stuck partial (no newline ever) growing forever
+                if len(holder["buf"]) > 64:
                     holder["buf"] = ""
             except Exception as e:
                 print("BLE rx err:", e)

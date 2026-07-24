@@ -163,13 +163,24 @@ def mqtt_cb(topic, payload):
         handle_sys(payload)
 
 
+def _make_ssl():
+    # Current umqtt expects an SSLContext (not ssl=True). HiveMQ uses a public CA;
+    # we skip verification (hobby). wrap_socket handles SNI from the server name.
+    import ssl
+    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    try:
+        ctx.verify_mode = ssl.CERT_NONE
+    except Exception:
+        pass
+    return ctx
+
+
 def mqtt_connect():
     global mqtt
     c = MQTTClient(client_id="npac-" + config.DEVICE_ID,
                    server=config.MQTT_HOST, port=config.MQTT_PORT,
                    user=config.MQTT_USER, password=config.MQTT_PASS,
-                   keepalive=30, ssl=True,
-                   ssl_params={"server_hostname": config.MQTT_HOST})
+                   keepalive=30, ssl=_make_ssl())
     c.set_last_will(T_STATUS, "offline", retain=True)
     c.set_callback(mqtt_cb)
     c.connect()
