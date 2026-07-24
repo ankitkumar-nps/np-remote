@@ -5,10 +5,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>NP ac · Remote</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('npac_theme')||'light');</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
+/* Light theme = default */
 :root{
+  --bg:#eef2f6;
+  --p1:#ffffff;
+  --p2:#f3f6fa;
+  --p3:#e6ecf3;
+  --ice:#0d9488;
+  --glow:#0091c2;
+  --warm:#e8620c;
+  --green:#16a34a;
+  --red:#e11d48;
+  --purple:#8b3fd6;
+  --gold:#c79200;
+  --border:rgba(20,40,60,0.12);
+  --text:#16232e;
+  --muted:#6b7d8a;
+  --on-glow:0 0 16px rgba(22,163,74,.25);
+  --blue-glow:0 0 22px rgba(0,145,194,.18);
+  --tnum-grad:linear-gradient(160deg,#123b52 20%,var(--glow));
+  --card-shadow:0 2px 12px rgba(20,40,60,.07);
+  --inset-bg:rgba(20,40,60,.05);
+  --track-bg:rgba(20,40,60,.14);
+  --anim-a:rgba(0,145,194,.10);
+  --anim-b:rgba(139,63,214,.07);
+}
+/* Dark theme (toggle) = original look */
+:root[data-theme="dark"]{
   --bg:#060608;
   --p1:#0a0a10;
   --p2:#111120;
@@ -25,6 +53,12 @@
   --muted:#4a6572;
   --on-glow:0 0 20px rgba(57,255,20,.4);
   --blue-glow:0 0 30px rgba(0,212,255,.3);
+  --tnum-grad:linear-gradient(160deg,#fff 30%,var(--glow));
+  --card-shadow:none;
+  --inset-bg:rgba(0,0,0,.3);
+  --track-bg:rgba(255,255,255,.1);
+  --anim-a:rgba(0,100,180,.25);
+  --anim-b:rgba(100,0,180,.15);
 }
 
 html,body{height:100%;overflow-x:hidden}
@@ -40,8 +74,8 @@ body{
 .bg-anim{
   position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(0,100,180,.25) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 30% at 100% 100%, rgba(100,0,180,.15) 0%, transparent 70%);
+    radial-gradient(ellipse 80% 40% at 50% -10%, var(--anim-a) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 30% at 100% 100%, var(--anim-b) 0%, transparent 70%);
 }
 .scanline{
   position:fixed;inset:0;z-index:0;pointer-events:none;
@@ -104,6 +138,7 @@ body{
 .card{
   background:var(--p1);border:1px solid var(--border);
   border-radius:18px;padding:20px;margin-bottom:14px;
+  box-shadow:var(--card-shadow);
   transition:border-color .3s,box-shadow .3s;
 }
 .card:hover{border-color:rgba(168,237,234,.2);}
@@ -154,7 +189,7 @@ body{
 .t-num{
   font-family:'Orbitron',monospace;font-size:70px;font-weight:900;
   line-height:1;letter-spacing:-3px;
-  background:linear-gradient(160deg,#fff 30%,var(--glow));
+  background:var(--tnum-grad);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
   min-width:140px;
 }
@@ -174,7 +209,7 @@ body{
 .t-range span{font-size:11px;color:var(--muted);font-family:'Orbitron',monospace;min-width:28px;}
 input[type=range]{
   flex:1;-webkit-appearance:none;height:3px;
-  background:linear-gradient(to right,var(--glow) var(--pct,50%),rgba(255,255,255,.1) var(--pct,50%));
+  background:linear-gradient(to right,var(--glow) var(--pct,50%),var(--track-bg) var(--pct,50%));
   border-radius:2px;outline:none;
 }
 input[type=range]::-webkit-slider-thumb{
@@ -246,7 +281,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 .voice-title{font-weight:700;font-size:15px;letter-spacing:.5px;margin-bottom:4px;}
 .voice-hint{font-size:12px;color:var(--muted);line-height:1.5;}
 .voice-result{
-  margin-top:12px;background:rgba(0,0,0,.3);border-radius:10px;
+  margin-top:12px;background:var(--inset-bg);border-radius:10px;
   padding:10px 14px;font-size:13px;color:var(--ice);min-height:38px;
   border:1px solid var(--border);letter-spacing:.3px;
   display:none;
@@ -285,7 +320,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 .tminput:focus{border-color:var(--glow);}
 .tog{
   width:44px;height:24px;border-radius:12px;
-  background:rgba(255,255,255,.1);border:none;cursor:pointer;
+  background:var(--track-bg);border:none;cursor:pointer;
   position:relative;transition:.25s;flex-shrink:0;
 }
 .tog.on{background:linear-gradient(90deg,var(--glow),var(--ice));}
@@ -340,10 +375,17 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
     <div class="logo">NP<span>·</span>AC</div>
     <div class="sub">MSY-GN22VF · Bluetooth</div>
   </div>
-  <button class="bt-btn" id="btBtn" onclick="connectBLE()">
-    <div class="bt-dot" id="btDot"></div>
-    <span id="btTxt">Connect</span>
-  </button>
+  <div style="display:flex;gap:8px">
+    <button class="bt-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark" style="padding:8px 12px">🌙</button>
+    <button class="bt-btn" id="cloudBtn" onclick="connectMQTT()" oncontextmenu="cloudConfig();return false" title="Tap to connect · long-press/right-click to configure">
+      <div class="bt-dot" id="cloudDot"></div>
+      <span id="cloudTxt">Cloud</span>
+    </button>
+    <button class="bt-btn" id="btBtn" onclick="connectBLE()">
+      <div class="bt-dot" id="btDot"></div>
+      <span id="btTxt">BLE</span>
+    </button>
+  </div>
 </div>
 
 <!-- No BLE warning -->
@@ -552,9 +594,86 @@ let rxBuf = '';
 let st = { power:false, temp:24, mode:'COOL', fan:'AUTO', vane:'AUTO', last:'None' };
 
 // ════════════════════════════════════════════════════
+//  MQTT (Cloud) Config  — HiveMQ Cloud over secure WebSocket
+// ════════════════════════════════════════════════════
+const MQTT = {
+  host: localStorage.getItem('npac_host') || 'xxxxxxxx.s1.eu.hivemq.cloud',
+  port: 8884,                                   // wss (required on HTTPS pages)
+  user: localStorage.getItem('npac_user') || 'npac-web',
+  pass: localStorage.getItem('npac_pass') || '',
+  deviceId: localStorage.getItem('npac_dev') || 'npac1',
+  get base(){ return 'npac/' + this.deviceId; },
+  get cmdTopic(){ return this.base + '/cmd'; },
+  get stateTopic(){ return this.base + '/state'; },
+  get statusTopic(){ return this.base + '/status'; },
+};
+let mqttClient = null, mqttConnected = false;
+
+function cloudConfig(){
+  const h = prompt('HiveMQ host (xxxx.s1.eu.hivemq.cloud):', MQTT.host); if(h===null) return;
+  const u = prompt('MQTT username:', MQTT.user); if(u===null) return;
+  const p = prompt('MQTT password:', MQTT.pass); if(p===null) return;
+  const d = prompt('Device ID:', MQTT.deviceId) || 'npac1';
+  localStorage.setItem('npac_host', h.trim());
+  localStorage.setItem('npac_user', u.trim());
+  localStorage.setItem('npac_pass', p);
+  localStorage.setItem('npac_dev', d.trim());
+  MQTT.host=h.trim(); MQTT.user=u.trim(); MQTT.pass=p; MQTT.deviceId=d.trim();
+  toast('Cloud config saved');
+}
+
+function connectMQTT(){
+  if (mqttConnected) { mqttClient.end(); return; }
+  if (!MQTT.pass) { cloudConfig(); if(!MQTT.pass) return; }
+  toast('Connecting to cloud…');
+  const url = 'wss://' + MQTT.host + ':' + MQTT.port + '/mqtt';
+  mqttClient = mqtt.connect(url, {
+    username: MQTT.user, password: MQTT.pass,
+    clientId: 'npac-web-' + Math.random().toString(16).slice(2),
+    clean: true, reconnectPeriod: 3000, connectTimeout: 8000,
+  });
+  mqttClient.on('connect', () => {
+    mqttConnected = true; setCloudUI(true); toast('Cloud connected!', 'ok');
+    mqttClient.subscribe(MQTT.stateTopic);
+    mqttClient.subscribe(MQTT.statusTopic);
+    send('s');                                  // ask device for current state
+  });
+  mqttClient.on('message', (t, m) => {
+    if (t === MQTT.stateTopic) { try { updateState(JSON.parse(m.toString())); } catch(e){} }
+    else if (t === MQTT.statusTopic) {
+      document.getElementById('lastAct').textContent = 'Device ' + m.toString();
+    }
+  });
+  mqttClient.on('close', () => { mqttConnected = false; setCloudUI(false); });
+  mqttClient.on('error', (e) => { toast('Cloud error: ' + (e.message||e), 'err'); });
+}
+
+function setCloudUI(ok){
+  document.getElementById('cloudDot').className = 'bt-dot ' + (ok ? 'on' : 'err');
+  document.getElementById('cloudTxt').textContent = ok ? 'Cloud ✓' : 'Cloud';
+  document.getElementById('cloudBtn').className = 'bt-btn' + (ok ? ' connected' : '');
+}
+
+// ════════════════════════════════════════════════════
 //  Boot
 // ════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+//  Theme (light default, toggle to dark) — persisted
+// ════════════════════════════════════════════════════
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('npac_theme', next);
+  updateThemeBtn(next);
+}
+function updateThemeBtn(t){
+  const b = document.getElementById('themeBtn');
+  if (b) b.textContent = (t === 'dark') ? '☀' : '🌙';
+}
+
 window.onload = () => {
+  updateThemeBtn(document.documentElement.getAttribute('data-theme'));
   if (!navigator.bluetooth) {
     document.getElementById('noBle').classList.add('show');
     document.getElementById('btBtn').style.opacity = '.4';
@@ -642,8 +761,15 @@ async function sendRaw(str) {
 }
 
 async function send(cmd) {
+  // Prefer cloud if connected (works from anywhere), else fall back to BLE.
+  if (mqttConnected && mqttClient) {
+    mqttClient.publish(MQTT.cmdTopic, cmd);
+    console.log('MQTT sent:', cmd);
+    return true;
+  }
   const ok = await sendRaw(cmd);
-  if (ok) console.log('Sent:', cmd);
+  if (ok) console.log('BLE sent:', cmd);
+  return ok;
 }
 
 // ════════════════════════════════════════════════════

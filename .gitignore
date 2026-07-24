@@ -1,0 +1,6 @@
+# Never commit real credentials or the flash backup
+firmware/micropython/config.py
+*.bin
+__pycache__/
+*.pyc
+.DS_Store
