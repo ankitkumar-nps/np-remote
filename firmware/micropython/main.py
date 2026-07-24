@@ -23,6 +23,7 @@ T_STATE  = BASE + "/state"
 T_STATUS = BASE + "/status"
 T_SYS    = BASE + "/sys"
 T_SYSRSP = BASE + "/sys/resp"
+T_LOG    = BASE + "/log"     # live logs, published for remote debugging
 
 # ---- state -------------------------------------------------
 st = {"power": False, "temp": 24, "mode": "COOL",
@@ -31,6 +32,21 @@ st = {"power": False, "temp": 24, "mode": "COOL",
 ir = MitsubishiIR(config.IR_PIN)
 mqtt = None
 ble_tx = None          # BLE notify callback set by ble module
+
+# ---- logging: print + keep last 50 lines + live-publish over MQTT ----
+_print = print
+LOGS = []
+def log(*a):
+    s = " ".join(str(x) for x in a)
+    _print(s)
+    LOGS.append(s)
+    if len(LOGS) > 50:
+        del LOGS[0]
+    if mqtt:
+        try:
+            mqtt.publish(T_LOG, s)
+        except Exception:
+            pass
 
 
 def state_json():
@@ -53,7 +69,7 @@ def push_state():
 
 def apply_ir():
     ir.send_state(st["power"], st["temp"], st["mode"], st["fan"], st["vane"])
-    print("IR>> %s | Pwr:%s Temp:%dC Mode:%s Fan:%s Vane:%s" % (
+    log("IR>> %s | Pwr:%s Temp:%dC Mode:%s Fan:%s Vane:%s" % (
         st["last"], "ON" if st["power"] else "OFF",
         st["temp"], st["mode"], st["fan"], st["vane"]))
 
@@ -74,7 +90,7 @@ def handle_command(cmd, src="?"):
     cmd = cmd.strip().lower()
     if not cmd:
         return
-    print("[%s] %s" % (src, cmd))
+    log("[%s] %s" % (src, cmd))
     send_ir = True
 
     if cmd == "on":
@@ -140,6 +156,8 @@ def handle_sys(payload):
             sys_reply({"ok": True, "result": repr(eval(msg["code"]))})
         elif c == "exec":                    # run statements
             exec(msg["code"]); sys_reply({"ok": True})
+        elif c == "logs":                    # recent log lines for remote debugging
+            sys_reply({"ok": True, "logs": LOGS})
         elif c == "info":
             sys_reply({"ok": True, "freemem": gc.mem_free(),
                        "ip": network.WLAN(network.STA_IF).ifconfig()[0],
@@ -190,24 +208,36 @@ def mqtt_connect():
         c.subscribe(T_SYS)
     mqtt = c
     push_state()
-    print("MQTT connected:", config.MQTT_HOST)
+    log("MQTT connected:", config.MQTT_HOST)
 
 
 # ---- WiFi --------------------------------------------------
 def wifi_connect():
     wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
+    if not wlan.active():
+        wlan.active(True)
+        time.sleep_ms(300)
     if wlan.isconnected():
         return True
     for ssid, pw in config.WIFI_APS:
-        print("WiFi: trying", ssid)
-        wlan.connect(ssid, pw)
+        log("WiFi: trying", ssid)
+        try:
+            wlan.disconnect()            # clear any half-open state (fixes "Internal State Error")
+        except OSError:
+            pass
+        time.sleep_ms(250)
+        try:
+            wlan.connect(ssid, pw)
+        except OSError as e:
+            log("WiFi connect err:", e)
+            time.sleep_ms(500)
+            continue
         for _ in range(40):
             if wlan.isconnected():
-                print("WiFi:", wlan.ifconfig()[0])
+                log("WiFi:", wlan.ifconfig()[0])
                 return True
             time.sleep_ms(200)
-    print("WiFi: none — BLE only")
+    log("WiFi: none in range — running BLE-only for now")
     return False
 
 
