@@ -575,6 +575,13 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
   <div class="voice-result" id="voiceResult"></div>
 </div>
 
+<!-- Get device online (BLE WiFi provisioning) -->
+<div class="card">
+  <div class="clabel">Get Device Online</div>
+  <div class="sh-intro">Connect over Bluetooth, then send your home WiFi — the AC joins the internet and the web link controls it from anywhere, for everyone.</div>
+  <button class="setup-close" style="width:100%" onclick="provisionWiFi()">📶 Set Device WiFi (over Bluetooth)</button>
+</div>
+
 <!-- Smart Home -->
 <div class="card">
   <div class="clabel">Smart Home</div>
@@ -743,6 +750,13 @@ function openSettings(){
   document.getElementById('settingsModal').classList.add('show');
 }
 function closeSettings(){ document.getElementById('settingsModal').classList.remove('show'); }
+async function provisionWiFi(){
+  if (!connected) { toast('Connect Bluetooth (BLE) first', 'err'); return; }
+  const s = prompt('Your home WiFi name (SSID):'); if (!s) return;
+  const p = prompt('WiFi password:'); if (p === null) return;
+  await sendRaw('wifi:' + s + '|' + p);          // sent over BLE, case preserved
+  toast('WiFi sent — device will reboot & join', 'ok');
+}
 function resetSettings(){
   ['npac_host','npac_user','npac_pass','npac_dev','npac_auto'].forEach(k => localStorage.removeItem(k));
   if (mqttConnected && mqttClient) { try { mqttClient.end(); } catch(e){} }

@@ -86,10 +86,41 @@ _VANE = {"vane:auto": ("AUTO", "Vane Auto"), "vane:swing": ("SWING", "Vane Swing
          "vane:4": ("4", "Vane 4"), "vane:5": ("5", "Vane 5")}
 
 
+def _load_saved_wifi():
+    # WiFi provisioned over BLE is stored here and tried first.
+    try:
+        with open("wifi.json") as f:
+            d = json.loads(f.read())
+        return [(d.get("ssid", ""), d.get("pw", ""))]
+    except Exception:
+        return []
+
+
+def _set_wifi(rest, src):
+    # payload: "SSID|PASSWORD" (case preserved). Saves + reboots to apply.
+    rest = rest.strip()
+    ssid, _, pw = rest.partition("|")
+    ssid = ssid.strip()
+    if not ssid:
+        log("wifi: empty ssid"); return
+    try:
+        with open("wifi.json", "w") as f:
+            f.write(json.dumps({"ssid": ssid, "pw": pw}))
+        log("[%s] WiFi saved: %s -> rebooting" % (src, ssid))
+        time.sleep_ms(500)
+        machine.reset()
+    except Exception as e:
+        log("wifi save err:", e)
+
+
 def handle_command(cmd, src="?"):
-    cmd = cmd.strip().lower()
+    cmd = cmd.strip()
     if not cmd:
         return
+    if cmd[:5].lower() == "wifi:":          # provisioning (case-sensitive payload)
+        _set_wifi(cmd[5:], src)
+        return
+    cmd = cmd.lower()
     log("[%s] %s" % (src, cmd))
     send_ir = True
 
@@ -264,7 +295,7 @@ async def wifi_connect():
         await asyncio.sleep_ms(300)
     if wlan.isconnected():
         return True
-    for ssid, pw in config.WIFI_APS:
+    for ssid, pw in (_load_saved_wifi() + list(config.WIFI_APS)):   # provisioned WiFi first
         log("WiFi: trying", ssid)
         try:
             wlan.disconnect()            # clear any half-open state (fixes "Internal State Error")
