@@ -803,7 +803,12 @@ function connectMQTT(){
     }
   });
   mqttClient.on('close', () => { mqttConnected = false; setCloudUI(false); });
-  mqttClient.on('error', (e) => { toast('Cloud error: ' + (e.message||e), 'err'); });
+  mqttClient.on('error', (e) => {
+    const msg = ((e && (e.message || e)) + '');
+    try { mqttClient.end(true); } catch(_){}   // stop the reconnect storm — no more popup spam
+    mqttConnected = false; setCloudUI(false);
+    toast(/not authoriz/i.test(msg) ? 'Cloud login rejected — create the HiveMQ credential' : ('Cloud: ' + msg), 'err');
+  });
 }
 
 function setCloudUI(ok){
