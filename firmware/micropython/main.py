@@ -112,6 +112,7 @@ def handle_command(cmd, src="?"):
             send_ir = False
     elif cmd in _MODE:
         st["mode"], st["last"] = _MODE[cmd]
+        st["power"] = True                 # selecting a mode turns the unit on (HA/voice friendly)
     elif cmd in _FAN:
         st["fan"], st["last"] = _FAN[cmd]
     elif cmd in _VANE:
@@ -193,6 +194,48 @@ def _make_ssl():
     return ctx
 
 
+def publish_ha_discovery():
+    # Auto-register this AC as a Home Assistant 'climate' entity via MQTT discovery.
+    # HA can then expose it to Google Home / Apple Home.
+    if not getattr(config, "HA_DISCOVERY", True):
+        return
+    cfg = {
+        "name": config.BLE_NAME,
+        "unique_id": config.DEVICE_ID + "_climate",
+        "availability_topic": T_STATUS,
+        "payload_available": "online", "payload_not_available": "offline",
+        "modes": ["off", "cool", "heat", "dry", "auto", "fan_only"],
+        "mode_command_topic": T_CMD,
+        "mode_command_template":
+            "{% if value=='off' %}off{% elif value=='fan_only' %}fanonly{% else %}{{ value }}{% endif %}",
+        "mode_state_topic": T_STATE,
+        "mode_state_template":
+            "{% if not value_json.power %}off{% elif value_json.mode=='FAN' %}fan_only{% else %}{{ value_json.mode|lower }}{% endif %}",
+        "temperature_command_topic": T_CMD,
+        "temperature_command_template": "temp:{{ value|int }}",
+        "temperature_state_topic": T_STATE,
+        "temperature_state_template": "{{ value_json.temp }}",
+        "min_temp": 16, "max_temp": 31, "temp_step": 1,
+        "fan_modes": ["auto", "low", "medium", "high", "max", "silent"],
+        "fan_mode_command_topic": T_CMD,
+        "fan_mode_command_template":
+            "{% set m={'auto':'fa','low':'f1','medium':'f2','high':'f3','max':'fmax','silent':'fs'} %}{{ m[value] }}",
+        "fan_mode_state_topic": T_STATE,
+        "fan_mode_state_template":
+            "{% set m={'AUTO':'auto','1':'low','2':'medium','3':'high','MAX':'max','SILENT':'silent'} %}{{ m[value_json.fan] }}",
+        "swing_modes": ["auto", "swing", "1", "2", "3", "4", "5"],
+        "swing_mode_command_topic": T_CMD,
+        "swing_mode_command_template": "vane:{{ value }}",
+        "swing_mode_state_topic": T_STATE,
+        "swing_mode_state_template": "{{ value_json.vane|lower }}",
+        "device": {"identifiers": [config.DEVICE_ID], "name": config.BLE_NAME,
+                   "model": "MSY-GN22VF", "manufacturer": "NowPurchase"},
+    }
+    topic = "homeassistant/climate/%s/config" % config.DEVICE_ID
+    mqtt.publish(topic, json.dumps(cfg), retain=True)
+    log("HA discovery published ->", topic)
+
+
 def mqtt_connect():
     global mqtt
     c = MQTTClient(client_id="npac-" + config.DEVICE_ID,
@@ -207,6 +250,7 @@ def mqtt_connect():
     if config.SYS_ENABLE:
         c.subscribe(T_SYS)
     mqtt = c
+    publish_ha_discovery()
     push_state()
     log("MQTT connected:", config.MQTT_HOST)
 
