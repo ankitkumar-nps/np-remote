@@ -464,7 +464,12 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 .log-name{font-weight:600;color:var(--text);font-size:13px;}
 .log-time{font-size:11px;color:var(--muted);white-space:nowrap;}
 .log-detail{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-word;}
+.log-fp{font-size:10.5px;color:var(--muted);opacity:.8;margin-top:3px;word-break:break-all;font-family:'Orbitron',monospace;letter-spacing:.2px;}
 .log-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0;}
+
+/* ── AM/PM label + admin bits ── */
+.ampm{font-family:'Orbitron',monospace;font-size:12px;font-weight:600;color:var(--glow);min-width:64px;text-align:center;letter-spacing:.5px;}
+.admin-badge{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:1px 6px;margin-left:6px;text-transform:uppercase;}
 
 @media(max-width:380px){
   .t-num{font-size:56px;}
@@ -678,7 +683,8 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
       <div class="arow-sub">Send OFF at scheduled time</div>
     </div>
     <div class="arow-right">
-      <input type="time" class="tminput" id="offTime" value="23:30"/>
+      <input type="time" class="tminput" id="offTime" value="23:30" oninput="updateTimeLabels()"/>
+      <span class="ampm" id="offAmpm">11:30 PM</span>
       <button class="tog" id="togOff" onclick="schedToggle('off')"></button>
     </div>
   </div>
@@ -688,7 +694,8 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
       <div class="arow-sub">Send ON at scheduled time</div>
     </div>
     <div class="arow-right">
-      <input type="time" class="tminput" id="onTime" value="07:00"/>
+      <input type="time" class="tminput" id="onTime" value="07:00" oninput="updateTimeLabels()"/>
+      <span class="ampm" id="onAmpm">7:00 AM</span>
       <button class="tog" id="togOn" onclick="schedToggle('on')"></button>
     </div>
   </div>
@@ -725,7 +732,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
   <div class="card">
     <div class="clabel" style="display:flex;justify-content:space-between;align-items:center">
       <span>Activity Log</span>
-      <span onclick="clearLog()" style="cursor:pointer;color:var(--muted);letter-spacing:1px">CLEAR</span>
+      <span id="clearBtn" onclick="clearLog()" style="cursor:pointer;color:var(--gold);letter-spacing:1px;display:none">CLEAR</span>
     </div>
     <div class="log-list" id="logList">
       <div class="log-empty">Nothing yet — actions and page opens will appear here.</div>
@@ -745,7 +752,8 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
     <p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.5">
       Your name is stamped on every change so everyone can see who did what.
     </p>
-    <label class="fld">Your name<input id="setName" placeholder="e.g. Ankit" autocomplete="off" maxlength="24"></label>
+    <label class="fld">Your name<input id="setName" placeholder="e.g. Ankit" autocomplete="off" maxlength="24" oninput="onNameType()"></label>
+    <label class="fld" id="adminPassFld" style="display:none">🔒 Super-admin password<input id="setAdminPass" type="password" placeholder="required for admin" autocomplete="off"></label>
     <div class="modal-btns">
       <button class="setup-close" onclick="saveName()">Save</button>
     </div>
@@ -873,7 +881,7 @@ function connectMQTT(){
     mqttClient.subscribe(MQTT.activityTopic);
     mqttClient.subscribe(MQTT.lastChangeTopic);
     sendNow('s');                               // ask device for current state (immediate, not queued)
-    logEvent('access', 'opened the dashboard');  // URL/access logger
+    setTimeout(() => logEvent('access', 'opened the dashboard'), 900);  // let IP resolve first
   });
   mqttClient.on('message', (t, m) => {
     if (t === MQTT.stateTopic) { deviceOnline = true; try { updateState(JSON.parse(m.toString())); } catch(e){} }
@@ -928,6 +936,8 @@ function toggleSetup(show){
 
 window.onload = () => {
   updateThemeBtn(document.documentElement.getAttribute('data-theme'));
+  fetchIP();
+  updateTimeLabels();
   loadLog();
   renderName();
   renderLog();
@@ -940,8 +950,31 @@ window.onload = () => {
 };
 
 // ════════════════════════════════════════════════════
-//  Identity (who is controlling) + device label
+//  Identity + super admin + device fingerprint
 // ════════════════════════════════════════════════════
+// NOTE: this is a static page, so the admin password below is visible in the
+// page source. It stops casual users from wiping logs — it is NOT real security
+// (a determined viewer can read the source). Real gating would need a server.
+const ADMIN_NAME = 'ankit';
+const ADMIN_PASS = 'ankit123#';
+function isAdmin(){ return localStorage.getItem('npac_admin') === '1'; }
+
+// Device fingerprint — captured so a fake name still ties back to a real device/IP.
+const clientInfo = {
+  devid: getDevId(),
+  ua: navigator.userAgent,
+  plat: navigator.platform || '',
+  scr: (screen.width + 'x' + screen.height),
+  tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+  lang: navigator.language || '',
+  ip: null,                         // filled in async
+};
+function fetchIP(){
+  fetch('https://api.ipify.org?format=json')
+    .then(r => r.json()).then(d => { clientInfo.ip = d.ip; })
+    .catch(() => {});
+}
+
 function getName(){ return (localStorage.getItem('npac_name') || '').trim(); }
 function getDevId(){
   let d = localStorage.getItem('npac_devid');
@@ -962,19 +995,52 @@ function renderName(){
   const n = getName();
   el.textContent = n || 'Set your name';
   el.className = 'who' + (n ? '' : ' unset');
+  let badge = document.getElementById('adminBadge');
+  if (isAdmin()) {
+    if (!badge) { badge = document.createElement('span'); badge.id = 'adminBadge'; badge.className = 'admin-badge'; badge.textContent = '⭐ Super Admin'; el.after(badge); }
+  } else if (badge) { badge.remove(); }
+  const clr = document.getElementById('clearBtn');
+  if (clr) clr.style.display = isAdmin() ? '' : 'none';
+}
+function onNameType(){
+  const n = document.getElementById('setName').value.trim().toLowerCase();
+  document.getElementById('adminPassFld').style.display = (n === ADMIN_NAME) ? '' : 'none';
 }
 function openName(){
   document.getElementById('setName').value = getName();
+  onNameType();
   document.getElementById('nameModal').classList.add('show');
   setTimeout(() => document.getElementById('setName').focus(), 50);
 }
 function saveName(){
   const n = document.getElementById('setName').value.trim();
   if (!n) { toast('Please enter a name', 'err'); return; }
+  if (n.toLowerCase() === ADMIN_NAME) {
+    const p = document.getElementById('setAdminPass').value;
+    if (p !== ADMIN_PASS) { toast('Wrong admin password', 'err'); return; }
+    localStorage.setItem('npac_admin', '1');
+  } else {
+    localStorage.removeItem('npac_admin');   // any other name = not admin
+  }
   localStorage.setItem('npac_name', n);
   document.getElementById('nameModal').classList.remove('show');
+  document.getElementById('setAdminPass').value = '';
   renderName();
-  toast('Hi ' + n + '!', 'ok');
+  toast((isAdmin() ? '⭐ Welcome, super admin ' : 'Hi ') + n + '!', 'ok');
+}
+
+// 24h "23:30" -> "11:30 PM": keeps AM/PM visible on every browser/locale
+function to12h(hhmm){
+  const parts = (hhmm || '').split(':'); if (parts.length < 2) return '';
+  let h = +parts[0]; const m = parts[1];
+  const ap = h < 12 ? 'AM' : 'PM'; h = h % 12; if (h === 0) h = 12;
+  return h + ':' + m + ' ' + ap;
+}
+function updateTimeLabels(){
+  ['off','on'].forEach(k => {
+    const inp = document.getElementById(k + 'Time'), lbl = document.getElementById(k + 'Ampm');
+    if (inp && lbl) lbl.textContent = to12h(inp.value);
+  });
 }
 
 // ════════════════════════════════════════════════════
@@ -993,13 +1059,18 @@ function showTab(name){
 let activityLog = [];
 function loadLog(){ try { activityLog = JSON.parse(localStorage.getItem('npac_log') || '[]'); } catch(e){ activityLog = []; } }
 function saveLog(){ try { localStorage.setItem('npac_log', JSON.stringify(activityLog.slice(-100))); } catch(e){} }
-function clearLog(){ activityLog = []; saveLog(); renderLog(); toast('Log cleared'); }
+function clearLog(){
+  if (!isAdmin()) { toast('Only the super admin can delete logs', 'err'); return; }
+  activityLog = []; saveLog(); renderLog(); toast('Log cleared', 'ok');
+}
 
 // type: 'access' | 'change'. Pass `entry` when replaying one received over MQTT.
 function logEvent(type, detail, entry){
   const e = entry || {
     id: getDevId() + '-' + Date.now() + '-' + Math.random().toString(16).slice(2,6),
-    t: Date.now(), name: getName() || 'Someone', dev: deviceLabel(), type, detail
+    t: Date.now(), name: getName() || 'Someone', dev: deviceLabel(), type, detail,
+    ip: clientInfo.ip, devid: clientInfo.devid, plat: clientInfo.plat,
+    scr: clientInfo.scr, tz: clientInfo.tz, ua: clientInfo.ua
   };
   if (activityLog.some(x => x.id === e.id)) return;   // dedupe (don't re-add our own echo)
   activityLog.push(e);
@@ -1024,15 +1095,22 @@ function renderLog(){
     el.innerHTML = '<div class="log-empty">Nothing yet — actions and page opens will appear here.</div>';
     return;
   }
+  const admin = isAdmin();
   el.innerHTML = activityLog.slice().reverse().map(e => {
     const ic = e.type === 'access' ? '👀' : '🎛️';
     const detail = (e.type === 'access' ? 'opened the dashboard' : e.detail) || '';
+    const where = (e.dev || '') + (e.ip ? (' · ' + e.ip) : '');
+    // Admin sees the full fingerprint so a fake name still resolves to a real device.
+    const fp = admin
+      ? '<div class="log-fp">id:' + esc(e.devid || '?') + ' · ' + esc(e.plat || '') + ' · '
+        + esc(e.scr || '') + ' · ' + esc(e.tz || '') + (e.ua ? ' · ' + esc((e.ua || '').slice(0, 60)) : '') + '</div>'
+      : '';
     return '<div class="log-item"><div class="log-ic">' + ic + '</div>'
       + '<div class="log-body"><div class="log-top">'
       + '<span class="log-name">' + esc(e.name) + '</span>'
       + '<span class="log-time">' + fmtTime(e.t) + '</span></div>'
-      + '<div class="log-detail">' + esc(detail) + ' · ' + esc(e.dev || '') + '</div>'
-      + '</div></div>';
+      + '<div class="log-detail">' + esc(detail) + ' · ' + esc(where) + '</div>'
+      + fp + '</div></div>';
   }).join('');
 }
 
