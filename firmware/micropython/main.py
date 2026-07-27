@@ -49,6 +49,18 @@ def log(*a):
             pass
 
 
+def apply_power_save():
+    # Lower CPU clock — dynamic power scales with frequency. 80MHz keeps the
+    # APB clock (hence IR RMT timing) intact; going lower would break IR.
+    f = getattr(config, "CPU_FREQ_MHZ", None)
+    if f:
+        try:
+            machine.freq(int(f) * 1_000_000)
+            log("CPU freq:", machine.freq())
+        except Exception as e:
+            log("freq set err:", e)
+
+
 _batt_adc = None
 def batt_init():
     global _batt_adc
@@ -328,6 +340,15 @@ async def wifi_connect():
     await asyncio.sleep_ms(400)
     wlan.active(True)
     await asyncio.sleep_ms(800)
+    if getattr(config, "POWER_SAVE", False):
+        # WiFi modem sleep: radio naps between router beacons -> big current cut.
+        pm = getattr(wlan, "PM_POWERSAVE", None)
+        if pm is not None:
+            try:
+                wlan.config(pm=pm)
+                log("WiFi power-save: ON")
+            except Exception as e:
+                log("pm set err:", e)
     for ssid, pw in (_load_saved_wifi() + list(config.WIFI_APS)):   # provisioned WiFi first
         log("WiFi: trying", ssid)
         try:
@@ -387,6 +408,7 @@ async def main():
     print("  cmd :", T_CMD)
     print("  sys :", T_SYS if config.SYS_ENABLE else "(disabled)")
     print("================================")
+    apply_power_save()
     batt_init()
 
     tasks = [net_task()]

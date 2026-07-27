@@ -32,3 +32,9 @@ SYS_ENABLE  = False        # OFF by default (safe for a public shareable link).
 
 # ---- Home Assistant ---------------------------------------
 HA_DISCOVERY = True        # auto-register as an HA climate entity (-> Google/Apple Home)
+
+# ---- Power saving -----------------------------------------
+POWER_SAVE   = True        # WiFi modem sleep: radio naps between router beacons ->
+                           # big average-current cut, stays connected. False to disable.
+CPU_FREQ_MHZ = 80          # C3 default 160; 80 halves CPU power. DO NOT go below 80 or
+                           # the APB/IR RMT timing breaks. None = leave default.
