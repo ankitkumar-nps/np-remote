@@ -338,7 +338,8 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 .tminput{
   background:var(--bg);border:1px solid var(--border);border-radius:8px;
   padding:7px 10px;color:var(--text);font-family:'Orbitron',monospace;
-  font-size:11px;width:84px;text-align:center;outline:none;transition:.2s;
+  font-size:12px;width:122px;text-align:center;outline:none;transition:.2s;
+  color-scheme:light dark;                 /* make the native AM/PM field visible in any theme */
 }
 .tminput:focus{border-color:var(--glow);}
 .tog{
@@ -419,6 +420,52 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
 .sh-sub{font-size:10px;color:var(--muted);margin-top:3px;letter-spacing:.3px;}
 .sh-note{font-size:11px;color:var(--muted);margin-top:12px;text-align:center;line-height:1.5;}
 
+/* ── Name bar ── */
+.namebar{
+  display:flex;align-items:center;gap:8px;
+  background:var(--p1);border:1px solid var(--border);
+  border-radius:12px;padding:9px 14px;margin-bottom:12px;
+  font-size:13px;cursor:pointer;transition:.2s;
+}
+.namebar:hover{border-color:var(--border-hover);}
+.namebar .who{font-weight:600;color:var(--text);}
+.namebar .who.unset{color:var(--warm);}
+.namebar .edit{margin-left:auto;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;}
+
+/* ── Tabs ── */
+.tabbar{display:flex;gap:6px;margin-bottom:16px;}
+.tab{
+  flex:1;padding:11px 8px;border-radius:12px;
+  border:1px solid var(--border);background:var(--p1);
+  color:var(--muted);font-family:'Orbitron',monospace;
+  font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  cursor:pointer;text-align:center;transition:.2s;
+}
+.tab:hover{border-color:var(--border-hover);color:var(--text);}
+.tab.active{border-color:var(--glow);color:var(--glow);background:rgba(0,212,255,.08);box-shadow:0 0 10px rgba(0,212,255,.12);}
+.tabpane[hidden]{display:none;}
+
+/* ── Last-change banner ── */
+.lastchg{padding:18px;}
+.lastchg .who2{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;color:var(--glow);margin-bottom:4px;}
+.lastchg .what{font-size:14px;color:var(--text);margin-bottom:8px;}
+.lastchg .meta{font-size:11px;color:var(--muted);letter-spacing:.5px;}
+
+/* ── Activity log ── */
+.log-list{max-height:440px;overflow-y:auto;margin-top:6px;}
+.log-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.log-item:last-child{border-bottom:none;}
+.log-ic{flex-shrink:0;font-size:15px;line-height:1.3;}
+.log-body{flex:1;min-width:0;}
+.log-top{display:flex;justify-content:space-between;gap:8px;}
+.log-name{font-weight:600;color:var(--text);font-size:13px;}
+.log-time{font-size:11px;color:var(--muted);white-space:nowrap;}
+.log-detail{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-word;}
+.log-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0;}
+
 @media(max-width:380px){
   .t-num{font-size:56px;}
   .two{grid-template-columns:1fr;}
@@ -449,6 +496,20 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
   </div>
 </div>
 
+<!-- Who is controlling -->
+<div class="namebar" onclick="openName()">
+  👤 <span class="who unset" id="nameLbl">Set your name</span>
+  <span class="edit">Change</span>
+</div>
+
+<!-- Tabs -->
+<div class="tabbar">
+  <div class="tab active" id="tab-btn-control"  onclick="showTab('control')">Control</div>
+  <div class="tab"        id="tab-btn-activity" onclick="showTab('activity')">Activity</div>
+</div>
+
+<!-- ============ CONTROL TAB ============ -->
+<div class="tabpane" id="tab-control">
 
 <!-- Getting Started -->
 <div class="setup-card" id="setupCard">
@@ -647,9 +708,49 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);}
   </div>
 </div>
 
+</div><!-- /tab-control -->
+
+<!-- ============ ACTIVITY TAB ============ -->
+<div class="tabpane" id="tab-activity" hidden>
+
+  <!-- Last change banner -->
+  <div class="card lastchg" id="lastChgCard">
+    <div class="clabel">Last Change</div>
+    <div class="who2" id="lcWho">—</div>
+    <div class="what" id="lcWhat">No changes recorded yet</div>
+    <div class="meta" id="lcMeta"></div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="card">
+    <div class="clabel" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Activity Log</span>
+      <span onclick="clearLog()" style="cursor:pointer;color:var(--muted);letter-spacing:1px">CLEAR</span>
+    </div>
+    <div class="log-list" id="logList">
+      <div class="log-empty">Nothing yet — actions and page opens will appear here.</div>
+    </div>
+  </div>
+
+</div><!-- /tab-activity -->
+
 </div><!-- /app -->
 
 <div class="toast" id="toast"></div>
+
+<!-- Name modal -->
+<div class="modal-bg" id="nameModal">
+  <div class="modal">
+    <div class="clabel">Who's controlling?</div>
+    <p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;line-height:1.5">
+      Your name is stamped on every change so everyone can see who did what.
+    </p>
+    <label class="fld">Your name<input id="setName" placeholder="e.g. Ankit" autocomplete="off" maxlength="24"></label>
+    <div class="modal-btns">
+      <button class="setup-close" onclick="saveName()">Save</button>
+    </div>
+  </div>
+</div>
 
 <!-- Settings modal -->
 <div class="modal-bg" id="settingsModal">
@@ -710,6 +811,8 @@ const MQTT = {
   get cmdTopic(){ return this.base + '/cmd'; },
   get stateTopic(){ return this.base + '/state'; },
   get statusTopic(){ return this.base + '/status'; },
+  get activityTopic(){ return this.base + '/activity'; },      // live who-did-what feed (not retained)
+  get lastChangeTopic(){ return this.base + '/lastchange'; },  // retained: last change survives for new visitors
 };
 let mqttClient = null, mqttConnected = false;
 
@@ -767,7 +870,10 @@ function connectMQTT(){
     mqttConnected = true; setCloudUI(true); toast('Cloud connected!', 'ok');
     mqttClient.subscribe(MQTT.stateTopic);
     mqttClient.subscribe(MQTT.statusTopic);
-    send('s');                                  // ask device for current state
+    mqttClient.subscribe(MQTT.activityTopic);
+    mqttClient.subscribe(MQTT.lastChangeTopic);
+    sendNow('s');                               // ask device for current state (immediate, not queued)
+    logEvent('access', 'opened the dashboard');  // URL/access logger
   });
   mqttClient.on('message', (t, m) => {
     if (t === MQTT.stateTopic) { deviceOnline = true; try { updateState(JSON.parse(m.toString())); } catch(e){} }
@@ -775,6 +881,8 @@ function connectMQTT(){
       deviceOnline = (m.toString() === 'online');
       document.getElementById('lastAct').textContent = 'Device ' + m.toString();
     }
+    else if (t === MQTT.activityTopic) { try { logEvent(null, null, JSON.parse(m.toString())); } catch(e){} }
+    else if (t === MQTT.lastChangeTopic) { try { renderLastChange(JSON.parse(m.toString())); } catch(e){} }
   });
   mqttClient.on('close', () => { mqttConnected = false; setCloudUI(false); });
   mqttClient.on('error', (e) => {
@@ -820,12 +928,128 @@ function toggleSetup(show){
 
 window.onload = () => {
   updateThemeBtn(document.documentElement.getAttribute('data-theme'));
+  loadLog();
+  renderName();
+  renderLog();
   // Auto-connect only if a login is embedded/saved. Never auto-nag — users can
   // tap the ? button for help or the Cloud button to configure.
   if (MQTT.pass && localStorage.getItem('npac_auto') !== '0') connectMQTT();
   updateSlider(24);
   renderState();
+  if (!getName()) openName();   // first visit: require a name so actions are attributable
 };
+
+// ════════════════════════════════════════════════════
+//  Identity (who is controlling) + device label
+// ════════════════════════════════════════════════════
+function getName(){ return (localStorage.getItem('npac_name') || '').trim(); }
+function getDevId(){
+  let d = localStorage.getItem('npac_devid');
+  if (!d) { d = Math.random().toString(16).slice(2, 8); localStorage.setItem('npac_devid', d); }
+  return d;
+}
+function deviceLabel(){
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return 'Android';
+  if (/iphone|ipad|ipod/i.test(ua)) return 'iPhone/iPad';
+  if (/windows/i.test(ua)) return 'Windows';
+  if (/mac/i.test(ua)) return 'Mac';
+  if (/linux/i.test(ua)) return 'Linux';
+  return 'Device';
+}
+function renderName(){
+  const el = document.getElementById('nameLbl');
+  const n = getName();
+  el.textContent = n || 'Set your name';
+  el.className = 'who' + (n ? '' : ' unset');
+}
+function openName(){
+  document.getElementById('setName').value = getName();
+  document.getElementById('nameModal').classList.add('show');
+  setTimeout(() => document.getElementById('setName').focus(), 50);
+}
+function saveName(){
+  const n = document.getElementById('setName').value.trim();
+  if (!n) { toast('Please enter a name', 'err'); return; }
+  localStorage.setItem('npac_name', n);
+  document.getElementById('nameModal').classList.remove('show');
+  renderName();
+  toast('Hi ' + n + '!', 'ok');
+}
+
+// ════════════════════════════════════════════════════
+//  Tabs
+// ════════════════════════════════════════════════════
+function showTab(name){
+  ['control','activity'].forEach(t => {
+    document.getElementById('tab-' + t).hidden = (t !== name);
+    document.getElementById('tab-btn-' + t).classList.toggle('active', t === name);
+  });
+}
+
+// ════════════════════════════════════════════════════
+//  Activity log + last-change banner
+// ════════════════════════════════════════════════════
+let activityLog = [];
+function loadLog(){ try { activityLog = JSON.parse(localStorage.getItem('npac_log') || '[]'); } catch(e){ activityLog = []; } }
+function saveLog(){ try { localStorage.setItem('npac_log', JSON.stringify(activityLog.slice(-100))); } catch(e){} }
+function clearLog(){ activityLog = []; saveLog(); renderLog(); toast('Log cleared'); }
+
+// type: 'access' | 'change'. Pass `entry` when replaying one received over MQTT.
+function logEvent(type, detail, entry){
+  const e = entry || {
+    id: getDevId() + '-' + Date.now() + '-' + Math.random().toString(16).slice(2,6),
+    t: Date.now(), name: getName() || 'Someone', dev: deviceLabel(), type, detail
+  };
+  if (activityLog.some(x => x.id === e.id)) return;   // dedupe (don't re-add our own echo)
+  activityLog.push(e);
+  saveLog();
+  renderLog();
+  if (!entry && mqttConnected && mqttClient) {         // broadcast to other open dashboards
+    try { mqttClient.publish(MQTT.activityTopic, JSON.stringify(e)); } catch(_){}
+  }
+}
+
+function fmtTime(t){
+  const d = new Date(t), now = new Date();
+  const time = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit', hour12:true});  // shows AM/PM
+  const sameDay = d.toDateString() === now.toDateString();
+  return sameDay ? time : (d.toLocaleDateString([], {month:'short', day:'numeric'}) + ' ' + time);
+}
+
+function renderLog(){
+  const el = document.getElementById('logList');
+  if (!el) return;
+  if (!activityLog.length) {
+    el.innerHTML = '<div class="log-empty">Nothing yet — actions and page opens will appear here.</div>';
+    return;
+  }
+  el.innerHTML = activityLog.slice().reverse().map(e => {
+    const ic = e.type === 'access' ? '👀' : '🎛️';
+    const detail = (e.type === 'access' ? 'opened the dashboard' : e.detail) || '';
+    return '<div class="log-item"><div class="log-ic">' + ic + '</div>'
+      + '<div class="log-body"><div class="log-top">'
+      + '<span class="log-name">' + esc(e.name) + '</span>'
+      + '<span class="log-time">' + fmtTime(e.t) + '</span></div>'
+      + '<div class="log-detail">' + esc(detail) + ' · ' + esc(e.dev || '') + '</div>'
+      + '</div></div>';
+  }).join('');
+}
+
+function publishLastChange(summary){
+  const e = { t: Date.now(), name: getName() || 'Someone', dev: deviceLabel(), detail: summary };
+  if (mqttConnected && mqttClient) {
+    try { mqttClient.publish(MQTT.lastChangeTopic, JSON.stringify(e), {retain:true}); } catch(_){}
+  }
+  renderLastChange(e);
+}
+function renderLastChange(e){
+  document.getElementById('lcWho').textContent  = e.name || '—';
+  document.getElementById('lcWhat').textContent = e.detail || '';
+  document.getElementById('lcMeta').textContent = 'from ' + (e.dev || 'a device') + ' · ' + fmtTime(e.t);
+}
+
+function esc(s){ return (''+s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 // ════════════════════════════════════════════════════
 //  BLE Connect
@@ -905,8 +1129,9 @@ async function sendRaw(str) {
 }
 
 let deviceOnline = false;
-async function send(cmd) {
-  // Cloud-only: publish the command. If not connected, reconnect and retry once.
+
+// ── Immediate publish (one command, straight to the device) ──────────
+function sendNow(cmd) {
   if (mqttConnected && mqttClient) {
     mqttClient.publish(MQTT.cmdTopic, cmd);
     console.log('sent:', cmd);
@@ -919,6 +1144,58 @@ async function send(cmd) {
     else toast('Not connected — tap Cloud', 'err');
   }, 1500);
   return false;
+}
+
+// ── Debounced, batched send (the default the UI uses) ────────────────
+// Tapping several controls quickly updates the display instantly but only
+// pushes ONE burst after a short idle — deduped to one command per category
+// (power / mode / temp / fan / vane) so we don't spam the AC with IR frames.
+let pending = {}, flushTimer = null;
+
+// Mirror the device's command logic locally so the UI reacts immediately.
+function applyLocal(cmd) {
+  const c = cmd.trim().toLowerCase();
+  let cat = null;
+  if (c === 'on')  { st.power = true;  cat = 'power'; }
+  else if (c === 'off') { st.power = false; cat = 'power'; }
+  else if (c === 't+')  { st.temp = Math.min(31, (st.temp|0) + 1); cat = 'temp'; }
+  else if (c === 't-')  { st.temp = Math.max(16, (st.temp|0) - 1); cat = 'temp'; }
+  else if (c.startsWith('temp:')) { const t = parseInt(c.slice(5)); if (t>=16 && t<=31){ st.temp = t; cat='temp'; } }
+  else if (['cool','heat','dry','auto','fanonly'].includes(c)) { st.mode = (c==='fanonly'?'FAN':c.toUpperCase()); st.power = true; cat='mode'; }
+  else if (['fa','f1','f2','f3','fmax','fs'].includes(c)) { st.fan = {fa:'AUTO',f1:'1',f2:'2',f3:'3',fmax:'MAX',fs:'SILENT'}[c]; cat='fan'; }
+  else if (c.startsWith('vane:')) { st.vane = c.slice(5).toUpperCase(); cat='vane'; }
+  return cat;
+}
+
+function send(cmd) {
+  const c = cmd.trim().toLowerCase();
+  if (c === 's' || c === 'status' || c === 'resend') { sendNow(cmd); return; }  // never batch these
+  const cat = applyLocal(cmd);
+  renderState();                              // instant optimistic feedback
+  if (!cat) { sendNow(cmd); return; }         // unknown → pass straight through
+  // store the *resolved* command per category so relative taps accumulate correctly
+  pending[cat] = (cat === 'temp') ? ('temp:' + st.temp)
+               : (cat === 'power') ? (st.power ? 'on' : 'off')
+               : c;
+  clearTimeout(flushTimer);
+  flushTimer = setTimeout(flushQueue, 550);
+}
+
+async function flushQueue() {
+  const order = ['mode','temp','fan','vane','power'];   // explicit power last so it wins over mode's implied on
+  const cmds = order.filter(k => pending[k]).map(k => pending[k]);
+  pending = {};
+  if (!cmds.length) return;
+  for (const c of cmds) { sendNow(c); await new Promise(r => setTimeout(r, 120)); }
+  const summary = describeState();
+  logEvent('change', summary);
+  publishLastChange(summary);
+}
+
+function describeState() {
+  const fanTxt = {AUTO:'Fan Auto','1':'Fan Low','2':'Fan Med','3':'Fan High',MAX:'Fan Max',SILENT:'Fan Silent'}[st.fan] || ('Fan '+st.fan);
+  const modeTxt = st.mode === 'FAN' ? 'Fan-only' : (st.mode.charAt(0)+st.mode.slice(1).toLowerCase());
+  return (st.power ? 'ON' : 'OFF') + ' · ' + modeTxt + ' · ' + st.temp + '°C · ' + fanTxt + ' · Vane ' + (''+st.vane).toLowerCase();
 }
 
 // ════════════════════════════════════════════════════
@@ -1012,7 +1289,7 @@ async function applyPreset(p) {
   };
   const cmds = presets[p];
   if (!cmds) return;
-  for (const c of cmds) { await send(c); await new Promise(r=>setTimeout(r,150)); }
+  cmds.forEach(c => send(c));      // queued + deduped → sent as ONE burst by flushQueue
   toast('Preset: ' + p.charAt(0).toUpperCase()+p.slice(1) + ' applied!', 'ok');
 }
 
